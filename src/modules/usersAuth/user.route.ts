@@ -11,6 +11,7 @@ import {
   verifyOtpForgetPassword,
   resetPassword,
   generateAccessToken,
+  loginWithGoogle,
 } from "./user.controller";
 import { allowRole, authGuard } from "../../middleware/auth.middleware";
 import { upload } from "../../middleware/multer.midleware";
@@ -52,6 +53,9 @@ router.route("/verify-account").post(validateRequest(verifyAccountSchema), verif
 
 // token
 router.post("/refresh-token", generateAccessToken);
+
+// google login
+router.post("/login-with-google", loginWithGoogle);
 
 
 

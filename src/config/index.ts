@@ -27,6 +27,9 @@ const config = {
     refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET as string,
     refreshTokenExpires: process.env.REFRESH_TOKEN_EXPIRES ?? "7d",
   },
+  provider: {
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+  },
 
   //password reset token
   passwordResetTokenSecret: process.env.PASSWORD_RESET_TOKEN_SECRET as string,

@@ -12,6 +12,7 @@ import { emailValidator } from "../../helpers/emailValidator";
 import { generateOTP } from "../../utils/otpGenerator";
 import { mailer } from "../../helpers/nodeMailer";
 import { accountVerificationOtpEmailTemplate, otpEmailTemplate } from "../../tempaletes/auth.templates";
+import { OAuth2Client } from "google-auth-library";
 
 export const userService = {
   async registerUser(payload: Partial<IUser>) {
@@ -57,7 +58,7 @@ export const userService = {
     return user;
   },
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string, rememberMe: boolean = false) {
     const user = await userModel.findOne({ email });
     if (!user) throw new CustomError(400, "user not found");
 
@@ -70,6 +71,7 @@ export const userService = {
     const accessToken = user.createAccessToken();
     const refreshToken = user.createRefreshToken();
 
+    user.rememberMe = rememberMe;
     user.refreshToken = refreshToken;
     await user.save();
 
@@ -246,4 +248,44 @@ export const userService = {
     const accessToken = user.createAccessToken();
     return accessToken;
   },
+
+
+
+  //TODO: login with google
+  async loginWithGoogle(token: string) {
+    // Initialize Google OAuth client
+    const client = new OAuth2Client(config.provider.googleClientId);
+
+    // Verify the token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: config.provider.googleClientId as string,
+    });
+
+    // Extract user information
+    const { email, name, picture } = ticket.getPayload() as { email: string; name: string; picture: string; };
+
+    // Find or create user in your database
+    let user = await userModel.findOne({ email });
+    if (!user) {
+      user = await userModel.create({ email, name, authProvider: "google", profileImage: { public_id: picture }, isVerified: true });
+    }
+
+    // Generate access token
+    const accessToken = user.createAccessToken();
+    // Generate refresh token
+    const refreshToken = user.createRefreshToken();
+
+
+    // Save refresh token in database
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    return {
+      email,
+      name,
+      accessToken,
+      refreshToken
+    };
+  }
 };

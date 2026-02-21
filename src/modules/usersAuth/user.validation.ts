@@ -16,7 +16,7 @@ export const registerUserSchema = z
   })
   .strict();
 
-  //verify account schema
+//verify account schema
 export const verifyAccountSchema = z
   .object({
     email: z.email("Invalid email address"),
@@ -39,6 +39,7 @@ export const loginSchema = z
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
         "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
       ),
+    rememberMe: z.boolean().default(false).optional(),
   })
   .strict();
 

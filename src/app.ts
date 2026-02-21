@@ -11,6 +11,7 @@ import morgan from "morgan";
 import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
+import { googleLogin } from "./Oauth/google";
 
 const app = express();
 
@@ -29,6 +30,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1", routes);
+
+app.get("/google-test", googleLogin);
 
 app.get("/", serverRunningTemplate);
 app.use(notFound);

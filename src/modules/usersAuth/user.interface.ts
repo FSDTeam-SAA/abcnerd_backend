@@ -31,6 +31,11 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationOtp: string | null;
   verificationOtpExpire: Date | null;
+  //auth provider
+  googleId: string | null;
+  facebookId: string | null;
+  authProvider: string | null;
+
   refreshToken: string | null;
   resetPassword: {
     otp: string | null;
@@ -38,6 +43,7 @@ export interface IUser extends Document {
     token: string | null;
     tokenExpire: Date | null;
   };
+  rememberMe: boolean;
   lastLogin: Date;
   comparePassword: (password: string) => Promise<boolean>;
   createAccessToken: () => string;

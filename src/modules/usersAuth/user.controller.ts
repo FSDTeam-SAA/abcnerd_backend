@@ -28,6 +28,7 @@ export const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await userService.login(
     req.body.email,
     req.body.password,
+    req.body.rememberMe
   );
 
   if (config.env === "development") {
@@ -139,5 +140,19 @@ export const generateAccessToken = asyncHandler(async (req, res) => {
 
   ApiResponse.sendSuccess(res, 201, "New access token generated", {
     accessToken
+  });
+});
+
+
+
+
+//TODO: Login With Google
+export const loginWithGoogle = asyncHandler(async (req, res) => {
+  const { email, name, accessToken, refreshToken } = await userService.loginWithGoogle(req.body.token);
+  ApiResponse.sendSuccess(res, 200, "Logged in", {
+    email,
+    name,
+    accessToken,
+    refreshToken
   });
 });
