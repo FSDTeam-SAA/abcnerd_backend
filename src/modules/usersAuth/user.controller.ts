@@ -143,9 +143,6 @@ export const generateAccessToken = asyncHandler(async (req, res) => {
   });
 });
 
-
-
-
 //TODO: Login With Google
 export const loginWithGoogle = asyncHandler(async (req, res) => {
   const { email, name, accessToken, refreshToken } = await userService.loginWithGoogle(req.body.token);
@@ -156,7 +153,6 @@ export const loginWithGoogle = asyncHandler(async (req, res) => {
     refreshToken
   });
 });
-
 
 // //TODO: login with kakao auth
 export const loginWithKakao = asyncHandler(async (req, res) => {
