@@ -3,6 +3,8 @@ export enum role {
   USER = "user",
 }
 
+export type AuthProvider = "local" | "google" | "kakao" | "apple";
+
 export enum status {
   ACTIVE = "active",
   INACTIVE = "inactive",
@@ -31,6 +33,12 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationOtp: string | null;
   verificationOtpExpire: Date | null;
+  //auth provider
+  provider: String,
+  providerId: {
+    type: String,
+  },
+
   refreshToken: string | null;
   resetPassword: {
     otp: string | null;
@@ -38,6 +46,7 @@ export interface IUser extends Document {
     token: string | null;
     tokenExpire: Date | null;
   };
+  rememberMe: boolean;
   lastLogin: Date;
   comparePassword: (password: string) => Promise<boolean>;
   createAccessToken: () => string;
@@ -54,4 +63,11 @@ export interface UpdateUserPayload {
   name?: string;
   selfIntroduction?: string;
   status?: status;
+}
+
+export interface AppleLoginResult {
+  email: string;
+  name?: string;
+  accessToken: string;
+  refreshToken: string;
 }

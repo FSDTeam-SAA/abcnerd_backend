@@ -24,7 +24,7 @@ const userSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: true,
+      required: function (): boolean { return this.provider === "local" }
     },
     role: {
       type: String,
@@ -52,6 +52,17 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: false,
     },
+    //!auth providers
+    provider: {
+      type: String,
+      enum: ["local", "google", "kakao", "apple"],
+      default: "local",
+    },
+    providerId: {
+      type: String,
+      required: false,
+    },
+
 
     //! *** Delete user from database after 2 minutes if not verified ***
     verificationOtpExpire: {
@@ -76,6 +87,10 @@ const userSchema = new Schema<IUser>(
       },
 
     },
+    rememberMe: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,
@@ -140,7 +155,7 @@ userSchema.methods.createAccessToken = function () {
     { userId: this._id, email: this.email },
     config.jwt.accessTokenSecret as string,
     {
-      expiresIn: config.jwt.accessTokenExpires as any,
+      expiresIn: this.rememberMe ? config.jwt.accessTokenExpires as any : "1d",
     },
   );
 };

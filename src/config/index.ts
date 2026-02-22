@@ -1,7 +1,7 @@
 import path from "path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.join(process.cwd(), ".env") });
+(dotenv as any).config({ path: path.join(process.cwd(), ".env") });
 
 const config = {
   /* ================= Server ================= */
@@ -26,6 +26,13 @@ const config = {
 
     refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET as string,
     refreshTokenExpires: process.env.REFRESH_TOKEN_EXPIRES ?? "7d",
+  },
+  provider: {
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    kakaoClientId: process.env.KAKAO_CLIENT_ID,
+    kakaoRedirectUri: process.env.KAKAO_REDIRECT_URI,
+
+    appleClientId: process.env.APPLE_CLIENT_ID,
   },
 
   //password reset token

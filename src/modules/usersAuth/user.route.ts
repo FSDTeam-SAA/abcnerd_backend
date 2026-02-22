@@ -11,6 +11,9 @@ import {
   verifyOtpForgetPassword,
   resetPassword,
   generateAccessToken,
+  loginWithGoogle,
+  loginWithKakao,
+  loginWithApple,
 } from "./user.controller";
 import { allowRole, authGuard } from "../../middleware/auth.middleware";
 import { upload } from "../../middleware/multer.midleware";
@@ -34,7 +37,7 @@ router.post("/register-user", validateRequest(registerUserSchema), registration)
 
 router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
 
-router.patch("/update-user", authGuard, upload.single("image"), validateRequest(updateUserSchema), updateUser);
+router.patch("/update-user", authGuard as any, upload.single("image"), validateRequest(updateUserSchema), updateUser);
 
 router.patch("/update-status/:userId", authGuard, allowRole("admin"), validateRequest(updateStatusSchema), updateStatus);
 
@@ -51,8 +54,16 @@ router.post("/reset-password/:token", validateRequest(resetPasswordSchema), rese
 router.route("/verify-account").post(validateRequest(verifyAccountSchema), verifyAccount);
 
 // token
-router.post("/refresh-token", generateAccessToken);
+router.post("/generate-access-token", generateAccessToken);
 
+// google login
+router.post("/login-with-google", loginWithGoogle);
+
+// kakao login
+router.post("/login-with-kakao", loginWithKakao);
+
+//apple login
+router.post("/login-with-apple", loginWithApple);
 
 
 export const userRoute = router;
