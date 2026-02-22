@@ -11,7 +11,8 @@ import morgan from "morgan";
 import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
-import { googleLogin } from "./Oauth/google";
+import { googleLogin, kakaoLoginPage } from "./Oauth/google";
+// import passport from "./Oauth/passport/kakao"; // not use a midlleware
 
 const app = express();
 
@@ -28,10 +29,12 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// app.use(passport.initialize())
 
 app.use("/api/v1", routes);
 
 app.get("/google-test", googleLogin);
+app.get("/kakao-test", kakaoLoginPage);
 
 app.get("/", serverRunningTemplate);
 app.use(notFound);

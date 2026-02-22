@@ -1,11 +1,10 @@
 // modules/user/user.service.ts
 import { userModel } from "./user.models";
-import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
 import { deleteCloudinary, uploadCloudinary } from "../../helpers/cloudinary";
-import { IUser, status, UpdateUserPayload } from "./user.interface";
+import { AppleLoginResult, IUser, status, UpdateUserPayload } from "./user.interface";
 import bcryptjs from "bcryptjs";
 // import { redisTokenService } from "../../helpers/redisTokenService";
 import { emailValidator } from "../../helpers/emailValidator";
@@ -13,8 +12,11 @@ import { generateOTP } from "../../utils/otpGenerator";
 import { mailer } from "../../helpers/nodeMailer";
 import { accountVerificationOtpEmailTemplate, otpEmailTemplate } from "../../tempaletes/auth.templates";
 import { OAuth2Client } from "google-auth-library";
+import appleSignin from "apple-signin-auth";
+import axios from "axios";
 
 export const userService = {
+  //register
   async registerUser(payload: Partial<IUser>) {
     if (payload.role === "admin")
       throw new CustomError(400, "Admin is reserved, you can't create admin");
@@ -44,6 +46,7 @@ export const userService = {
     return user;
   },
 
+  //verify account
   async verifyAccount(email: string, otp: string) {
     const user = await userModel.findOne({ email });
     if (!user) throw new CustomError(400, "User not found, register again");
@@ -58,8 +61,9 @@ export const userService = {
     return user;
   },
 
+  //login
   async login(email: string, password: string, rememberMe: boolean = false) {
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email, provider: "local" });
     if (!user) throw new CustomError(400, "user not found");
 
     //check account status
@@ -78,6 +82,7 @@ export const userService = {
     return { user, accessToken, refreshToken };
   },
 
+  //update user
   async updateUser(req: any) {
     const data: UpdateUserPayload = req.body;
     const { email, role } = req?.user as { email: string; role: string };
@@ -122,6 +127,7 @@ export const userService = {
     return user
   },
 
+  //update user status by admin 
   async updateStatus(req: any) {
     const { userId } = req?.params as { userId: string };
     const { status } = req.body as { status: status };
@@ -133,7 +139,7 @@ export const userService = {
     return user
   },
 
-  // Service
+  //update password
   async updatePassword(req: any) {
 
     const { email } = req?.user as { email: string };
@@ -150,6 +156,7 @@ export const userService = {
     return true
   },
 
+  //logout
   async logout(email: string) {
     const user = await userModel.findOne({ email });
     if (!user) throw new CustomError(400, "Email not found");
@@ -159,8 +166,9 @@ export const userService = {
     await user.save();
   },
 
+  //forget password
   async forgetPassword(email: string) {
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email, provider: "local" });
     if (!user) throw new CustomError(400, "User not found");
 
     // generate random token
@@ -205,7 +213,7 @@ export const userService = {
     return user
   },
 
-
+  //reset password
   async resetPassword(token: string, password: string) {
     //decode token
     const decoded = jwt.verify(token, config.passwordResetTokenSecret as string) as jwt.JwtPayload;
@@ -214,6 +222,9 @@ export const userService = {
     //find user
     const user = await userModel.findOne({ email: decoded.email });
     if (!user) throw new CustomError(400, "User not found");
+
+    if (!user.resetPassword.token) throw new CustomError(400, "There is no request to reset password");
+
     //update password
 
     //password compare can't be same as old
@@ -229,7 +240,7 @@ export const userService = {
     return true;
   },
 
-
+  //generate access token
   async generateAccessToken(refreshToken: string) {
     const decoded = jwt.verify(
       refreshToken,
@@ -249,8 +260,6 @@ export const userService = {
     return accessToken;
   },
 
-
-
   //TODO: login with google
   async loginWithGoogle(token: string) {
     // Initialize Google OAuth client
@@ -266,9 +275,9 @@ export const userService = {
     const { email, name, picture } = ticket.getPayload() as { email: string; name: string; picture: string; };
 
     // Find or create user in your database
-    let user = await userModel.findOne({ email });
+    let user = await userModel.findOne({ email: email, provider: "google" });
     if (!user) {
-      user = await userModel.create({ email, name, authProvider: "google", profileImage: { public_id: picture }, isVerified: true });
+      user = await userModel.create({ email, name, provider: "google", profileImage: { public_id: picture }, isVerified: true });
     }
 
     // Generate access token
@@ -287,5 +296,103 @@ export const userService = {
       accessToken,
       refreshToken
     };
+  },
+
+  //TODO: login with google
+  async loginWithKakao(code: string) {
+    const tokenResponse = await axios.post(
+      "https://kauth.kakao.com/oauth/token",
+      null,
+      {
+        params: {
+          grant_type: "authorization_code",
+          client_id: config.provider.kakaoClientId,
+          redirect_uri: config.provider.kakaoRedirectUri,
+          code,
+        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    if (tokenResponse.status !== 200) {
+      throw new Error("Failed to get access token");
+    }
+
+    const { access_token } = tokenResponse.data as { access_token: string };
+
+    const userResponse = await axios.get("https://kapi.kakao.com/v2/user/me", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    if (userResponse.status !== 200) {
+      throw new Error("Failed to get user information");
+    }
+
+    const kakaoUser: any = userResponse.data;
+    const email = kakaoUser.kakao_account?.email;
+    const name = kakaoUser.kakao_account?.profile?.nickname;
+    const profileImage = kakaoUser.kakao_account?.profile?.profile_image_url;
+    const kakaoId = kakaoUser.id;
+
+    // Find or create user in your database
+    let user = await userModel.findOne({ email });
+
+    // If user doesn't exist, create a new one
+    if (!user) {
+      user = await userModel.create({
+        email,
+        name,
+        provider: "kakao",
+        providerId: kakaoId,
+        profileImage: { public_id: "", secure_url: profileImage },
+        isVerified: true,
+      });
+    }
+
+    // Generate access token and refresh token
+    const jwtAccessToken = user.createAccessToken();
+    const jwtRefreshToken = user.createRefreshToken();
+    user.refreshToken = jwtRefreshToken;
+    await user.save();
+
+    return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
+  },
+
+  //TODO: login with apple
+  async loginWithApple(identityToken: string, userName?: string): Promise<AppleLoginResult> {
+    // Verify identity token
+    const applePayload: any = await appleSignin.verifyIdToken(identityToken, {
+      audience: config.provider.appleClientId, // your Apple Service ID
+      ignoreExpiration: false,
+    });
+
+    // Extract email & name
+    const email = applePayload.email;
+    const name = userName || applePayload.name || "Apple User"; // frontend sends name only on first login
+    const appleId = applePayload.sub;
+
+    if (!email) throw new Error("Apple ID token did not provide email");
+
+    //  Find or create user
+    let user = await userModel.findOne({ email });
+    if (!user) {
+      user = await userModel.create({
+        email,
+        name,
+        provider: "apple",
+        providerId: appleId,
+        profileImage: { public_id: "", secure_url: "" },
+        isVerified: true,
+      });
+    }
+
+    // Generate access token
+    const jwtAccessToken = user.createAccessToken();
+    const jwtRefreshToken = user.createRefreshToken();
+    user.refreshToken = jwtRefreshToken;
+    await user.save();
+
+    return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
+
   }
 };

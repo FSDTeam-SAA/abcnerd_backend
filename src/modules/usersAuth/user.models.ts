@@ -24,8 +24,7 @@ const userSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: false,
-      select: false,
+      required: function (): boolean { return this.provider === "local" }
     },
     role: {
       type: String,
@@ -54,17 +53,14 @@ const userSchema = new Schema<IUser>(
       required: false,
     },
     //!auth providers
-    googleId: {
+    provider: {
       type: String,
-    },
-    facebookId: {
-      type: String,
-    },
-
-    authProvider: {
-      type: String,
-      enum: ["local", "google"],
+      enum: ["local", "google", "kakao", "apple"],
       default: "local",
+    },
+    providerId: {
+      type: String,
+      required: false,
     },
 
 

@@ -149,7 +149,34 @@ export const generateAccessToken = asyncHandler(async (req, res) => {
 //TODO: Login With Google
 export const loginWithGoogle = asyncHandler(async (req, res) => {
   const { email, name, accessToken, refreshToken } = await userService.loginWithGoogle(req.body.token);
-  ApiResponse.sendSuccess(res, 200, "Logged in", {
+  ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
+    email,
+    name,
+    accessToken,
+    refreshToken
+  });
+});
+
+
+// //TODO: login with kakao auth
+export const loginWithKakao = asyncHandler(async (req, res) => {
+  const code = req.body
+  if (!code) throw new Error("Code is missing, please sent code in request body");
+  const { email, name, accessToken, refreshToken } = await userService.loginWithKakao(code);
+  ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
+    email,
+    name,
+    accessToken,
+    refreshToken
+  });
+});
+
+//TODO: login with apple auth
+export const loginWithApple = asyncHandler(async (req, res) => {
+  const { identityToken, userName } = req.body as { identityToken: string; userName: string };
+  if (!identityToken) throw new Error("Identity token is missing, please sent identity token in request body");
+  const { email, name, accessToken, refreshToken } = await userService.loginWithApple(identityToken, userName == "" ? undefined : userName);
+  ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
     email,
     name,
     accessToken,
