@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { userModel } from "../models/user.model";
 import CustomError from "../helpers/CustomError";
+import { userModel } from "../modules/usersAuth/user.models";
 
 /* ================= Types ================= */
 
@@ -11,7 +11,6 @@ interface AuthUser {
   _id: string;
   email: string;
   role: Role;
-  permissions?: Permission[];
 }
 
 interface CustomRequest extends Request {
@@ -21,66 +20,37 @@ interface CustomRequest extends Request {
 /* ================= Middleware ================= */
 
 export const permission =
-  (allowedRoles: Role[] = [], allowedPermissions: Permission[] = []) =>
-  async (
-    req: CustomRequest,
-    _res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const userId = (req.user as AuthUser)?._id;
+  (allowedRoles: Role[] = [],) =>
+    async (
+      req: CustomRequest,
+      _res: Response,
+      next: NextFunction
+    ): Promise<void> => {
+      try {
+        const userId = (req.user as AuthUser)?._id;
+        if (!userId) throw new CustomError(401, "Unauthorized access");
 
-      if (!userId) {
-        throw new CustomError(401, "Unauthorized access");
-      }
+        const user = await userModel.findById(userId).lean();
 
-      /* ================= Fetch User ================= */
-      const user = await userModel.findById(userId).lean<{
-        _id: string;
-        email: string;
-        role: Role;
-        permissions?: Permission[];
-        accountStatus: "active" | "inactive" | "blocked";
-      }>();
+        if (!user) throw new CustomError(401, "User not found");
 
-      if (!user) {
-        throw new CustomError(401, "User not found");
-      }
-
-      /* ================= Account Status ================= */
-      if (user.accountStatus !== "active") {
-        throw new CustomError(
-          403,
-          `Your account is ${user.accountStatus}. Access denied.`
-        );
-      }
-
-      /* ================= Role Check ================= */
-      if (allowedRoles.length && !allowedRoles.includes(user.role)) {
-        throw new CustomError(403, "You do not have role permission.");
-      }
-
-      /* ================= Permission Check ================= */
-      if (allowedPermissions.length) {
-        const hasPermission = user.permissions?.some((permission) =>
-          allowedPermissions.includes(permission)
-        );
-
-        if (!hasPermission) {
-          throw new CustomError(403, "You do not have required permissions.");
+        // Use `status` instead of `accountStatus` to match your schema
+        if (user.status !== "active") {
+          throw new CustomError(403, `Your account is ${user.status}. Access denied.`);
         }
+
+        if (allowedRoles.length && !allowedRoles.includes(user.role)) {
+          throw new CustomError(403, "You are not authorized to access this route.");
+        }
+
+        req.user = {
+          _id: user._id,
+          email: user.email,
+          role: user.role,
+        } as AuthUser;
+
+        next();
+      } catch (error) {
+        next(error);
       }
-
-      /* ================= Attach User ================= */
-      req.user = {
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions,
-      } as AuthUser;
-
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
+    };

@@ -28,7 +28,7 @@ export const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await userService.login(
     req.body.email,
     req.body.password,
-    req.body.rememberMe
+    req?.body?.rememberMe
   );
 
   if (config.env === "development") {

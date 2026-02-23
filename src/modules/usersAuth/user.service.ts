@@ -63,12 +63,13 @@ export const userService = {
 
   //login
   async login(email: string, password: string, rememberMe: boolean = false) {
-    const user = await userModel.findOne({ email: email, provider: "local" });
+    const user = await userModel.findOne({ email: email, provider: "local" }).select("+password");
     if (!user) throw new CustomError(400, "user not found");
 
     //check account status
     if (!user.isVerified) throw new CustomError(400, "Account not verified");
 
+    
     const isPasswordMatch = await bcryptjs.compare(password, user.password);
     if (!isPasswordMatch) throw new CustomError(400, "incorrect password");
 

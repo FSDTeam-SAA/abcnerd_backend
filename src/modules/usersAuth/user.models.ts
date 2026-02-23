@@ -24,7 +24,8 @@ const userSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: function (): boolean { return this.provider === "local" }
+      required: function (): boolean { return this.provider === "local" },
+      select: false,
     },
     role: {
       type: String,
