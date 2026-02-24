@@ -24,4 +24,5 @@ router.patch(
   wordAction,
 );
 
-export default router;
+const learningRoute = router;
+export default learningRoute;

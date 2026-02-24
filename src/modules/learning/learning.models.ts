@@ -34,4 +34,4 @@ learningSchema.pre("save", function (next) {
   this.estimatedTime = this.dailyGoal / 2;
 });
 
-export const LearningModel = model<ILearning>("Learning", learningSchema);
+export const Learning = model<ILearning>("Learning", learningSchema);

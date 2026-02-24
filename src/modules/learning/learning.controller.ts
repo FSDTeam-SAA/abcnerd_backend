@@ -26,7 +26,7 @@ export const createLearningSession = async (
 
     res.status(201).json({
       success: true,
-      message: "Learning session শুরু হয়েছে",
+      message: "Learning session started successfully",
       data: session,
     });
   } catch (err) {
@@ -54,7 +54,7 @@ export const fetchLearningWords = async (
 
     res.status(200).json({
       success: true,
-      message: "Words পাওয়া গেছে",
+      message: "words found successfully",
       totalWords: words.length,
       data: words,
     });
@@ -81,7 +81,7 @@ export const wordAction = async (
 
     res.status(200).json({
       success: true,
-      message: `Word টি "${action}" হিসেবে mark হয়েছে`,
+      message: `Word marked as "${action}`,
       data: result.progress,
       shouldShowVideo: result.shouldShowVideo, // true হলে frontend video দেখাবে
     });

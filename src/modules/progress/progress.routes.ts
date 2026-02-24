@@ -1,8 +1,11 @@
 import { Router } from "express";
-import { updateProgressController } from "./progress.controller";
+import { getProgress, getProgressWords } from "./progress.controller";
+import { authGuard } from "../../middleware/auth.middleware";
 
 const router = Router();
 
-router.post("/update", updateProgressController);
+router.get("/", authGuard, getProgress);
+router.get("/words", authGuard, getProgressWords);
 
-export default router;
+const progressRoute = router;
+export default progressRoute;

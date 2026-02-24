@@ -1,9 +1,9 @@
 import { Types } from "mongoose";
 import { CategoryWord } from "../categoryword/categoryword.interface";
 import CustomError from "../../helpers/CustomError";
-import { LearningModel } from "./learning.models";
+import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
-import { ProgressModel } from "../progress/progress.models";
+import { Progress } from "../progress/progress.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 
 export const createLearningSessionService = async (
@@ -11,12 +11,12 @@ export const createLearningSessionService = async (
   category: CategoryWord,
   dailyGoal: number,
 ) => {
-  await LearningModel.findOneAndUpdate(
+  await Learning.findOneAndUpdate(
     { user: userId, isActive: true },
     { isActive: false },
   );
 
-  const session = await LearningModel.create({
+  const session = await Learning.create({
     user: userId,
     dailyGoal,
     learningCategory: category,
@@ -34,7 +34,7 @@ export const fetchLearningWordsService = async (
   const categoryDoc = await CategoryWordModel.findOne({ name: category });
   if (!categoryDoc) throw new CustomError(404, "Catergory not found");
 
-  const progress = await ProgressModel.findOne({ user: userId });
+  const progress = await Progress.findOne({ user: userId });
   const excludedIds = [
     ...(progress?.memorized || []),
     ...(progress?.reviewLater || []),
@@ -55,8 +55,25 @@ export const wordActionService = async (
   action: "memorized" | "reviewLater",
 ) => {
   const oppositeField = action === "memorized" ? "reviewLater" : "memorized";
+  const userProgress = await Progress.findOne({ user: userId });
 
-  let progress: any = await ProgressModel.findOneAndUpdate(
+  if (
+    (userProgress?.memorized?.includes(new Types.ObjectId(wordId)) &&
+      action === "memorized") ||
+    (userProgress?.reviewLater?.includes(new Types.ObjectId(wordId)) &&
+      action === "reviewLater")
+  ) {
+    throw new CustomError(400, "Word already marked as " + action);
+  }
+
+  if (
+    userProgress?.memorized?.includes(new Types.ObjectId(wordId)) &&
+    action === "reviewLater"
+  ) {
+    throw new CustomError(400, "Word already marked as memorized");
+  }
+
+  let progress: any = await Progress.findOneAndUpdate(
     { user: userId },
     {
       $addToSet: { [action]: new Types.ObjectId(wordId) },
@@ -90,7 +107,7 @@ export const wordActionService = async (
     ? (progress.nextVideoAt || 10) + 10
     : progress.nextVideoAt;
 
-  progress = await ProgressModel.findOneAndUpdate(
+  progress = await Progress.findOneAndUpdate(
     { user: userId },
     {
       score: newScore,
@@ -105,7 +122,7 @@ export const wordActionService = async (
 };
 
 export const getActiveSessionService = async (userId: Types.ObjectId) => {
-  const session = await LearningModel.findOne({ user: userId, isActive: true });
-  if (!session) throw new CustomError(404, "কোনো active session নেই");
+  const session = await Learning.findOne({ user: userId, isActive: true });
+  if (!session) throw new CustomError(404, "No active session found");
   return session;
 };

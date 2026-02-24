@@ -7,5 +7,5 @@ export interface IProgress {
   streak: number;
   score: number;
   lastActionDate: Date | null;
-  nextVideoAt: number;
+  nextVideoAt: boolean;
 }
