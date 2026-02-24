@@ -1,23 +1,72 @@
 
-//TODO: customize as needed
-
 import { Types } from "mongoose";
+import { CategoryWord } from "../categoryword/categoryword.interface";
+
+export enum WordType {
+  FREQUENT = "Frequent",
+  MEDIUM = "Medium",
+  DIFFICULTY = "Difficulty",
+  ENTIRE = "Entire",
+}
+
+export enum PartOfSpeech {
+  NOUN = "Noun",
+  VERB = "Verb",
+  ADJECTIVE = "Adjective",
+  ADVERB = "Adverb",
+  PRONOUN = "Pronoun",
+  PREPOSITION = "Preposition",
+  CONJUNCTION = "Conjunction",
+  INTERJECTION = "Interjection",
+}
 
 export interface IWordmanagement {
   _id: string;
   word: string;
   synonyms?: string[];
   description: string;
+
   categoryWordId: Types.ObjectId;
+  categoryType?: CategoryWord;
+
+  wordType?: WordType;
+  partOfSpeech?: PartOfSpeech;
+
+  tags?: string[];
+
   status?: string;
   slug?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface ICreateWordmanagement {
-  title: string;                // the main word
-  description?: string;          // optional explanation or definition
-  status?: "active" | "inactive"; // restrict to allowed values
-  synonyms?: string[];           // optional array of synonyms
+  word: string;
+  description: string;
+  status?: "active" | "inactive" | "blocked";
+
+  synonyms?: string[];
+
+  categoryWordId: Types.ObjectId | string;
+
+  wordType: WordType;
+  partOfSpeech?: PartOfSpeech;
+
+  tags?: string[];
+}
+
+export interface IUpdateWordmanagement {
+  word?: string;
+  description?: string;
+  status?: "active" | "inactive" | "blocked";
+
+  synonyms?: string[];
+
+  categoryWordId?: Types.ObjectId | string;
+
+  wordType?: WordType;
+  partOfSpeech?: PartOfSpeech;
+
+  tags?: string[];
 }
