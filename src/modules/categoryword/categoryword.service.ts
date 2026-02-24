@@ -3,6 +3,7 @@ import { ICreateCategoryWord } from "./categoryword.interface";
 import CustomError from "../../helpers/CustomError";
 import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
+import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 
 //TODO: customize as needed
 
@@ -15,7 +16,7 @@ const createCategoryWord = async (data: ICreateCategoryWord) => {
 
 //TODO: get all categorywords
 const getAllCategoryWords = async (req: any) => {
-  const { page: pagebody, limit: limitbody, sortBy = "acc", isactive = "all" } = req.query;
+  const { page: pagebody, limit: limitbody, sortBy = "asc", isactive = "all" } = req.query;
   const { role } = req?.user;
 
   // Pagination
@@ -43,9 +44,9 @@ const getAllCategoryWords = async (req: any) => {
   }
 
   // Validate sortBy
-  const allowedSort = ["acc", "dece"];
+  const allowedSort = ["asc", "desc"];
   if (!allowedSort.includes(sortBy)) {
-    throw new CustomError(400, "Invalid sortBy, allowed values are 'acc' and 'dece'");
+    throw new CustomError(400, "Invalid sortBy, allowed values are 'asc' and 'desc'");
   }
 
   // Map sortBy to actual sorting
@@ -84,9 +85,18 @@ const updateCategoryWord = async (categorywordId: string, data: any) => {
 
 //delete categoryword by categorywordId
 const deleteCategoryWord = async (categorywordId: string) => {
-  //! also implement not delete if any worsds or wordmanaement are associated
+  // Check if any Wordmanagement is linked
+  const wordManagementExists = await WordmanagementModel.exists({
+    categoryWordId: categorywordId,
+  });
 
-  
+  if (wordManagementExists) {
+    throw new CustomError(
+      400,
+      "Cannot delete. Wordmanagement entries are associated with this category."
+    );
+  }
+
   const categoryWord = await CategoryWordModel.findByIdAndDelete(categorywordId);
   if (!categoryWord) throw new CustomError(400, "CategoryWord not found");
   return categoryWord;

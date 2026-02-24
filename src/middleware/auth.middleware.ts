@@ -10,7 +10,7 @@ interface TokenPayload extends JwtPayload {
 }
 interface AuthRequest extends Request {
   user?: {
-    _id: string;
+    _id: string ;
     email: string;
     role: string;
   };

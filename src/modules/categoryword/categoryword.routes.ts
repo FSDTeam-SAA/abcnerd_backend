@@ -12,8 +12,8 @@ const router = express.Router();
 
 //router.post("/create-categoryword", uploadSingle("image"), validateRequest(createCategoryWordSchema), createCategoryWord);
 router.post("/create-categoryword", authGuard, permission(["admin"]), validateRequest(createCategoryWordSchema), createCategoryWord);
-router.get("/get-all-categorywords", authGuard, permission(["admin"]), getAllCategoryWords);
-router.get("/get-single-categoryword/:categorywordId", authGuard, permission(["admin"]), getCategoryWordById);
+router.get("/get-all-categorywords", authGuard, permission(["admin", "user"]), getAllCategoryWords);
+router.get("/get-single-categoryword/:categorywordId", authGuard, permission(["admin", "user"]), getCategoryWordById);
 router.patch("/update-categoryword/:categorywordId", authGuard, permission(["admin"]), validateRequest(updateCategoryWordSchema), updateCategoryWord);
 router.delete("/delete-categoryword/:categorywordId", authGuard, permission(["admin"]), deleteCategoryWord);
 
