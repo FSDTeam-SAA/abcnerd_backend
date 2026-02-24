@@ -1,33 +1,91 @@
-import { Request, Response } from "express";
-import { fetchLearningService } from "./learning.service";
+import { NextFunction, Request, Response } from "express";
+import {
+  createLearningSessionService,
+  fetchLearningWordsService,
+  wordActionService,
+  getActiveSessionService,
+} from "./learning.service";
 import { CategoryWord } from "../categoryword/categoryword.interface";
+import { Types } from "mongoose";
 
-export const fetchLearningController = async (req: Request, res: Response) => {
+// POST /api/learning/session
+export const createLearningSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const { userId, category, dailyGoal } = req.body;
+    const userId = req.user!._id;
+    const { dailyGoal, learningCategory } = req.body;
 
-    if (!userId || !category || !dailyGoal) {
-      return res.status(400).json({ message: "Missing parameters" });
-    }
-
-    // Validate category enum
-    if (!Object.values(CategoryWord).includes(category)) {
-      return res.status(400).json({ message: "Invalid category" });
-    }
-
-    const words = await fetchLearningService({ userId, category, dailyGoal });
-
-    res.json({
-      message: "Learning words fetched successfully",
+    const session = await createLearningSessionService(
+      userId as Types.ObjectId,
+      learningCategory as CategoryWord,
       dailyGoal,
-      words: words.map((w) => ({
-        _id: w._id,
-        word: w.word,
-        description: w.description,
-        synonyms: w.synonyms,
-      })),
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Learning session শুরু হয়েছে",
+      data: session,
     });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/learning/words
+export const fetchLearningWords = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user!._id;
+
+    // active session থেকে category আর dailyGoal নাও
+    const session = await getActiveSessionService(userId as Types.ObjectId);
+
+    const words = await fetchLearningWordsService(
+      userId as Types.ObjectId,
+      session.learningCategory,
+      session.dailyGoal,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Words পাওয়া গেছে",
+      totalWords: words.length,
+      data: words,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /api/learning/word-action
+export const wordAction = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?._id;
+    const { wordId, action } = req.body;
+
+    const result = await wordActionService(
+      userId as Types.ObjectId,
+      wordId,
+      action,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Word টি "${action}" হিসেবে mark হয়েছে`,
+      data: result.progress,
+      shouldShowVideo: result.shouldShowVideo, // true হলে frontend video দেখাবে
+    });
+  } catch (err) {
+    next(err);
   }
 };

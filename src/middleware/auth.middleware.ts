@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import config from "../config";
 import CustomError from "../helpers/CustomError";
 import { userModel } from "../modules/usersAuth/user.models";
+import { Types } from "mongoose";
 // import { redisTokenService } from "../helpers/redisTokenService";
 
 interface TokenPayload extends JwtPayload {
@@ -10,7 +11,7 @@ interface TokenPayload extends JwtPayload {
 }
 interface AuthRequest extends Request {
   user?: {
-    _id: string;
+    _id: string | Types.ObjectId;
     email: string;
     role: string;
   };

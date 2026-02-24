@@ -1,13 +1,11 @@
-//TODO: customize as needed
-
 import { Types } from "mongoose";
 import { CategoryWord } from "../categoryword/categoryword.interface";
 
 export interface ILearning {
-  _id: string;
+  _id: Types.ObjectId;
+  user: Types.ObjectId; // কোন user এর session
   dailyGoal: number;
-  EstimatedTime: number;
-  streak: string;
-  action: boolean;
-  learningCategory: Types.ObjectId;
+  estimatedTime: number; // auto = dailyGoal / 2
+  learningCategory: CategoryWord; // enum string
+  isActive: boolean; // একটাই active session থাকবে
 }

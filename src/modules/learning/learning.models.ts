@@ -4,36 +4,34 @@ import { CategoryWord } from "../categoryword/categoryword.interface";
 
 const learningSchema = new Schema<ILearning>(
   {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     dailyGoal: {
       type: Number,
       required: true,
-      trim: true,
     },
-    EstimatedTime: {
+    estimatedTime: {
       type: Number,
-      required: true,
-    },
-    streak: {
-      type: String,
-      required: true,
     },
     learningCategory: {
-      type: Schema.Types.ObjectId,
+      type: String,
+      enum: Object.values(CategoryWord),
       required: true,
     },
-    action: {
+    isActive: {
       type: Boolean,
-      required: true, 
       default: true,
     },
   },
-  {
-    timestamps: true, // adds createdAt & updatedAt
-  },
+  { timestamps: true },
 );
 
+// save এর আগেই estimatedTime বের করে নাও
 learningSchema.pre("save", function (next) {
-  this.EstimatedTime = this.dailyGoal / 2;
+  this.estimatedTime = this.dailyGoal / 2;
 });
 
 export const LearningModel = model<ILearning>("Learning", learningSchema);
