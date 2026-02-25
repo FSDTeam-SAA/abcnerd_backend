@@ -26,6 +26,18 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
       trim: true,
     },
 
+    pronunciation: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    examples: {
+      type: [String],
+      default: [],
+      trim: true
+    },
+
     /* Category */
     categoryWordId: {
       type: Schema.Types.ObjectId,
@@ -51,6 +63,12 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
       type: String,
       enum: Object.values(PartOfSpeech),
       default: null,
+    },
+
+    /* Frequency */
+    frequency: {
+      type: Number,
+      default: 0,
     },
 
     /* Tags */

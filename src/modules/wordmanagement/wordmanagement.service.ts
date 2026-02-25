@@ -113,6 +113,7 @@ const getWordmanagementById = async (role: string, wordmanagementId: string) => 
 
 //TODO: update wordmanagement by wordmanagementId
 const updateWordmanagement = async (wordmanagementId: string, data: any) => {
+
   const wordmanagement = await WordmanagementModel.findOneAndUpdate(
     { _id: wordmanagementId },
     data,
