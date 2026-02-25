@@ -56,6 +56,25 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
+//TODO: get all users
+export const getalluser = asyncHandler(async (req, res) => {
+
+  const { users ,meta} = await userService.getAllUsers(req);
+  ApiResponse.sendSuccess(res, 200, "User fetched successfully", users, meta);
+});
+
+//TODO: get single user
+export const getSingleUser = asyncHandler(async (req, res) => {
+  const{ userId } = req?.params as { userId: string };
+  const user = await userService.getUser(userId);
+  ApiResponse.sendSuccess(res, 200, "User fetched successfully", user);
+});
+//TODO: get my profile
+export const getmyprofile = asyncHandler(async (req, res) => {
+  const user = await userService.getmyprofile(req);
+  ApiResponse.sendSuccess(res, 200, "Profile data fetched successfully", user);
+});
+
 //TODO: update user also profile image
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const result = await userService.updateUser(req);

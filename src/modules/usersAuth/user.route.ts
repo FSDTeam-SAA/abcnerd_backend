@@ -14,6 +14,9 @@ import {
   loginWithGoogle,
   loginWithKakao,
   loginWithApple,
+  getalluser,
+  getmyprofile,
+  getSingleUser,
 } from "./user.controller";
 import { allowRole, authGuard } from "../../middleware/auth.middleware";
 import { upload } from "../../middleware/multer.midleware";
@@ -37,11 +40,17 @@ router.post("/register-user", validateRequest(registerUserSchema), registration)
 
 router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
 
+router.get("/get-all-user",authGuard, getalluser);
+
+router.get("/get-single-user/:userId", authGuard, getSingleUser);
+
+router.get("/get-my-profile", authGuard, getmyprofile);
+
 router.patch("/update-user", authGuard as any, upload.single("image"), validateRequest(updateUserSchema), updateUser);
 
 router.patch("/update-status/:userId", authGuard, allowRole("admin"), validateRequest(updateStatusSchema), updateStatus);
 
-router.patch("/update-password", authGuard, validateRequest(updatePasswordSchema), updatePassword);
+router.patch("/update-password", rateLimiter(1, 5), authGuard, validateRequest(updatePasswordSchema), updatePassword);
 
 router.post("/logout", authGuard, logout);
 

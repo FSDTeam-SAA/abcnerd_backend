@@ -26,6 +26,9 @@ export interface IWordmanagement {
   synonyms?: string[];
   description: string;
 
+  pronunciation?: string;     // "/əˈkɑːmplɪʃ/"
+  examples?: string[];
+
   categoryWordId: Types.ObjectId;
   categoryType?: CategoryWord;
 
@@ -33,6 +36,8 @@ export interface IWordmanagement {
   partOfSpeech?: PartOfSpeech;
 
   tags?: string[];
+
+  frequency?: number;   
 
   status?: string;
   slug?: string;
