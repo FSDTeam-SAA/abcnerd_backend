@@ -9,13 +9,13 @@ import { authGuard } from "../../middleware/auth.middleware";
 const router = Router();
 
 router.post(
-  "/session",
+  "/create-session",
   authGuard,
   //   validateRequest(createLearningValidation),
   createLearningSession,
 );
 
-router.get("/words", authGuard, fetchLearningWords);
+router.get("/fetch-words", authGuard, fetchLearningWords);
 
 router.patch(
   "/word-action",

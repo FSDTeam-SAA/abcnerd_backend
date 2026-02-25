@@ -4,7 +4,7 @@ import { authGuard } from "../../middleware/auth.middleware";
 
 const router = Router();
 
-router.get("/", authGuard, getProgress);
+router.get("/progress-summary", authGuard, getProgress);
 router.get("/words", authGuard, getProgressWords);
 
 const progressRoute = router;
