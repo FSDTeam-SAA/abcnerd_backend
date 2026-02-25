@@ -17,11 +17,15 @@ export const createLearningSession = async (
   try {
     const userId = req.user!._id;
     const { dailyGoal, learningCategory } = req.body;
+    const { wordType } = req.query;
+
+    // console.log(wordType);
 
     const session = await createLearningSessionService(
       userId as Types.ObjectId,
       learningCategory as CategoryWord,
       dailyGoal,
+      wordType as string,
     );
 
     res.status(201).json({
@@ -46,10 +50,13 @@ export const fetchLearningWords = async (
     // active session থেকে category আর dailyGoal নাও
     const session = await getActiveSessionService(userId as Types.ObjectId);
 
+    console.log(session.wordType);
+
     const words = await fetchLearningWordsService(
       userId as Types.ObjectId,
       session.learningCategory,
       session.dailyGoal,
+      session.wordType,
     );
 
     res.status(200).json({
