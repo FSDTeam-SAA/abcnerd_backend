@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
 import { deleteCloudinary, uploadCloudinary } from "../../helpers/cloudinary";
-import { AppleLoginResult, IUser, status, UpdateUserPayload } from "./user.interface";
+import { AppleLoginResult, AuthProvider, IUser, role, status, UpdateUserPayload } from "./user.interface";
 import bcryptjs from "bcryptjs";
 // import { redisTokenService } from "../../helpers/redisTokenService";
 import { emailValidator } from "../../helpers/emailValidator";
@@ -14,6 +14,7 @@ import { accountVerificationOtpEmailTemplate, otpEmailTemplate } from "../../tem
 import { OAuth2Client } from "google-auth-library";
 import appleSignin from "apple-signin-auth";
 import axios from "axios";
+import { paginationHelper } from "../../utils/pagination";
 
 export const userService = {
   //register
@@ -69,7 +70,7 @@ export const userService = {
     //check account status
     if (!user.isVerified) throw new CustomError(400, "Account not verified");
 
-    
+
     const isPasswordMatch = await bcryptjs.compare(password, user.password);
     if (!isPasswordMatch) throw new CustomError(400, "incorrect password");
 
@@ -82,6 +83,104 @@ export const userService = {
 
     return { user, accessToken, refreshToken };
   },
+
+  //get all users
+  async getAllUsers(req: any) {
+    const {
+      role: roleParam,
+      status: statusParam,
+      provider,
+      search,
+      page: pagebody,
+      limit: limitbody,
+    } = req.query;
+
+    const { page, limit, skip } = paginationHelper(pagebody, limitbody);
+
+    const filter: any = {};
+
+    // ROLE filter + validation
+    // if you want to allow role=all
+    const allowedRoles = [...Object.values(role), "all"] as const;
+
+    if (roleParam && !allowedRoles.includes(roleParam)) {
+      throw new CustomError(
+        400,
+        `Invalid role "${roleParam}". Allowed roles: ${allowedRoles.join(", ")}`
+      );
+    }
+
+    if (roleParam && roleParam !== "all") {
+      filter.role = roleParam;
+    }
+
+    // STATUS filter + validation
+    // if you want to allow status=all
+    const allowedStatuses = [...Object.values(status), "all"] as const;
+
+    if (statusParam && !allowedStatuses.includes(statusParam)) {
+      throw new CustomError(
+        400,
+        `Invalid status "${statusParam}". Allowed status: ${allowedStatuses.join(", ")}`
+      );
+    }
+
+    if (statusParam && statusParam !== "all") {
+      filter.status = statusParam;
+    }
+
+    // PROVIDER filter + validation
+    const allowedProviders: AuthProvider[] = ["local", "google", "kakao", "apple"];
+
+    if (provider && !allowedProviders.includes(provider as AuthProvider)) {
+      throw new CustomError(
+        400,
+        `Invalid provider "${provider}". Allowed providers: ${allowedProviders.join(", ")}`
+      );
+    }
+
+    if (provider) {
+      filter.provider = provider;
+    }
+
+    //SEARCH filter
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+
+    const [users, totalUsers] = await Promise.all([
+      userModel.find(filter).skip(skip).limit(limit).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe"),
+      userModel.countDocuments(filter),
+    ]);
+
+    return {
+      users,
+      meta: {
+        page,
+        limit,
+        totalPages: Math.ceil(totalUsers / limit),
+        total: totalUsers,
+      },
+    };
+},
+
+//get single user
+  async getUser(userId: string) {
+  const user = await userModel.findOne({ _id: userId }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
+  if (!user) throw new CustomError(400, "User not found");
+  return user;
+},
+//get single user
+async getmyprofile(req: any) {
+  const { email } = req?.user as { email: string };
+  const user = await userModel.findOne({ email: email }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
+  if (!user) throw new CustomError(400, "User not found");
+  return user;
+},
 
   //update user
   async updateUser(req: any) {
