@@ -10,6 +10,7 @@ export const createLearningSessionService = async (
   userId: Types.ObjectId,
   category: CategoryWord,
   dailyGoal: number,
+  wordType: string,
 ) => {
   await Learning.findOneAndUpdate(
     { user: userId, isActive: true },
@@ -21,6 +22,7 @@ export const createLearningSessionService = async (
     dailyGoal,
     learningCategory: category,
     isActive: true,
+    wordType: wordType,
   });
 
   return session;
@@ -30,6 +32,7 @@ export const fetchLearningWordsService = async (
   userId: Types.ObjectId,
   category: CategoryWord,
   dailyGoal: number,
+  wordType: string,
 ) => {
   const categoryDoc = await CategoryWordModel.findOne({ name: category });
   if (!categoryDoc) throw new CustomError(404, "Catergory not found");
@@ -43,6 +46,7 @@ export const fetchLearningWordsService = async (
   const words = await WordmanagementModel.find({
     categoryWordId: categoryDoc._id,
     status: "active",
+    wordType: wordType,
     _id: { $nin: excludedIds.map((id) => id.toString()) },
   }).limit(dailyGoal);
 

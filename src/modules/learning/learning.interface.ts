@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { CategoryWord } from "../categoryword/categoryword.interface";
+import { WordType } from "../wordmanagement/wordmanagement.interface";
 
 export interface ILearning {
   _id: Types.ObjectId;
@@ -8,4 +9,5 @@ export interface ILearning {
   estimatedTime: number; // auto = dailyGoal / 2
   learningCategory: CategoryWord; // enum string
   isActive: boolean; // একটাই active session থাকবে
+  wordType: WordType;
 }
