@@ -1,9 +1,5 @@
 
 
-export enum CategoryWord {
-  BASIC_VOCABULARY = "Basic vocabulary",
-  BUSINESS = "Business",
-}
 export interface ICategoryWord {
   _id: string;
   name: string;
