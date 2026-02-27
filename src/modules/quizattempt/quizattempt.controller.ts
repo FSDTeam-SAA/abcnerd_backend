@@ -1,5 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import { getAttemptHistoryService } from "./quizattempt.service";
+import {
+  getAllAttemptsService,
+  getAttemptByIdService,
+  getAttemptHistoryService,
+  getAttemptsByQuizService,
+} from "./quizattempt.service";
 import { Types } from "mongoose";
 
 // ── User: নিজের সব attempt history ──
@@ -29,10 +34,13 @@ export const getAttemptById = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user?._id;
     const { attemptId } = req.params;
 
-    const attempt = await getAttemptByIdService(userId, attemptId);
+    const attempt = await getAttemptByIdService(
+      userId as Types.ObjectId,
+      attemptId as string,
+    );
 
     res.status(200).json({
       success: true,
@@ -51,7 +59,7 @@ export const getAttemptsByQuiz = async (
 ) => {
   try {
     const { quizId } = req.params;
-    const attempts = await getAttemptsByQuizService(quizId);
+    const attempts = await getAttemptsByQuizService(quizId as string);
 
     res.status(200).json({
       success: true,

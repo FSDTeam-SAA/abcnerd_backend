@@ -1,13 +1,17 @@
-import express from "express";
-import { createNoteBook } from "./notebook.controller";
-import { validateRequest } from "../../middleware/validateRequest.middleware";
-import { createNoteBookSchema } from "./notebook.validation";
-import { uploadSingle } from "../../middleware/multer.midleware";
+import { Router } from "express";
+import {
+  getNotebook,
+  getNotebookByQuiz,
+  deleteNotebookEntry,
+  clearNotebook,
+} from "./notebook.controller";
+import { authGuard } from "../../middleware/auth.middleware";
 
-const router = express.Router();
+const router = Router();
 
-//TODO: customize as needed
-
-//router.post("/create-notebook", uploadSingle("image"), validateRequest(createNoteBookSchema), createNoteBook);
+router.get("/", authGuard, getNotebook);
+router.get("/quiz/:quizId", authGuard, getNotebookByQuiz);
+router.delete("/entry/:entryId", authGuard, deleteNotebookEntry);
+router.delete("/clear", authGuard, clearNotebook);
 
 export default router;

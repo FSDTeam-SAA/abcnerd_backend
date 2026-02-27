@@ -1,13 +1,26 @@
-import express from "express";
-import { createQuizAttempt } from "./quizattempt.controller";
-import { validateRequest } from "../../middleware/validateRequest.middleware";
-import { createQuizAttemptSchema } from "./quizattempt.validation";
-import { uploadSingle } from "../../middleware/multer.midleware";
+import { Router } from "express";
+import { authGuard } from "../../middleware/auth.middleware";
+import {
+  getAllAttempts,
+  getAttemptById,
+  getAttemptHistory,
+  getAttemptsByQuiz,
+} from "./quizattempt.controller";
+import { permission } from "../../middleware/permission.middleware";
 
-const router = express.Router();
+const router = Router();
 
-//TODO: customize as needed
+// ── User routes ──
+router.get("/", authGuard, getAttemptHistory);
+router.get("/:attemptId", authGuard, getAttemptById);
 
-//router.post("/create-quizattempt", uploadSingle("image"), validateRequest(createQuizAttemptSchema), createQuizAttempt);
+// ── Admin routes ──
+router.get("/admin/all", authGuard, permission(["admin"]), getAllAttempts);
+router.get(
+  "/admin/quiz/:quizId",
+  authGuard,
+  permission(["admin"]),
+  getAttemptsByQuiz,
+);
 
 export default router;
