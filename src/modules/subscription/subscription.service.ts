@@ -7,6 +7,8 @@ import { stripe } from "../../lib/stripe";
 import { userModel } from "../usersAuth/user.models";
 import { InvoiceModel } from "../invoice/invoice.models";
 import { getIo } from "../../socket/server";
+import { createNotification } from "../notification/notification.controller";
+import { NotificationModel } from "../notification/notification.models";
 
 type CreateCheckoutPayload = {
   userId: Types.ObjectId | string;
@@ -555,6 +557,16 @@ export const handleStripeWebhook = async (req: any) => {
         currency: pi.currency?.toUpperCase() || "KRW",
         stripePaymentIntentId: pi.id,
       });
+
+      const notification = await NotificationModel.create({
+        receiverId: String(userId),
+        title: "Subscription Activated",
+        description: `Your subscription is now active! Plan: ${(sub as any).planId.title || "N/A"}`,
+        type: "user",
+        status: "unread",
+      });
+
+      console.log(notification);
 
       console.log(`[Webhook] SUCCESS — subscription activated: ${sub._id}, notified userId: ${userId}`);
       break;
