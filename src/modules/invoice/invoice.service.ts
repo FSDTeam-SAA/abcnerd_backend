@@ -3,6 +3,7 @@ import { ICreateInvoice } from "./invoice.interface";
 import CustomError from "../../helpers/CustomError";
 import { uploadCloudinary } from "../../helpers/cloudinary";
 import mongoose from "mongoose";
+import { paginationHelper } from "../../utils/pagination";
 
 //TODO: customize as needed
 
@@ -31,116 +32,54 @@ export const createInvoice = async (payload: ICreateInvoice) => {
   return invoice;
 };
 
-export const getInvoices = async (query: {
-  search?: string;
-  status?: string;
-  page?: string | number;
-  limit?: string | number;
-}) => {
-  const page = Math.max(Number(query.page || 1), 1);
-  const limit = Math.min(Math.max(Number(query.limit || 10), 1), 100);
-  const skip = (page - 1) * limit;
+//TODO: get single invoice, only own invoice can be fetched
+const getInvoice = async (invoiceId: string, userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(invoiceId)) throw new CustomError(400, "Invalid invoiceId");
 
-  const filter: any = { isDeleted: false };
+  const invoice = await InvoiceModel.findOne({ _id: invoiceId, userId, isDeleted: false });
+  if (!invoice) throw new CustomError(404, "Invoice not found");
 
-  if (query.status) {
-    const s = String(query.status).trim() as InvoiceStatus;
-    if (!allowedStatus.includes(s)) {
-      throw new CustomError(400, `Invalid status. Allowed: ${allowedStatus.join(", ")}`);
-    }
-    filter.status = s;
-  }
+  return invoice;
+};
 
-  if (query.search) {
-    const s = String(query.search).trim();
-    filter.$or = [
-      { title: { $regex: s, $options: "i" } },
-      { description: { $regex: s, $options: "i" } },
-      { slug: { $regex: s, $options: "i" } },
-    ];
-  }
+//Todo: get my all invoices user and admin
+const getAllInvoices = async (req: any) => {
+  const { page: pageQuery, limit: limitQuery } = req.query;
+  const { _id: userId } = req.user;
 
-  const [data, total] = await Promise.all([
-    InvoiceModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-    InvoiceModel.countDocuments(filter),
-  ]);
+  // pagination helper
+  const { page, limit, skip } = paginationHelper(pageQuery, limitQuery);
+
+  const filter = {
+    userId: String(userId),
+    isDeleted: false,
+  };
+
+  const invoices = await InvoiceModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+  const total = await InvoiceModel.countDocuments(filter);
+  const totalPages = Math.ceil(total / limit);
 
   return {
+    invoices,
     meta: {
       page,
       limit,
+      totalPages,
       total,
-      totalPages: Math.ceil(total / limit),
     },
-    data,
   };
 };
 
-export const getInvoiceById = async (invoiceId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
-    throw new CustomError(400, "Invalid invoiceId");
-  }
+//Todo: delete invoice, only own invoice can be deleted
+const deleteInvoice = async (invoiceId: string, userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(invoiceId)) throw new CustomError(400, "Invalid invoiceId");
 
-  const invoice = await InvoiceModel.findOne({
-    _id: invoiceId,
-    isDeleted: false,
-  }).lean();
-
+  const invoice = await InvoiceModel.findOne({ _id: invoiceId, userId, isDeleted: false });
   if (!invoice) throw new CustomError(404, "Invoice not found");
-  return invoice;
+
+  invoice.isDeleted = true;
+  await invoice.save();
 };
 
-export const updateInvoice = async (
-  invoiceId: string,
-  payload: Partial<ICreateInvoice>
-) => {
-  if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
-    throw new CustomError(400, "Invalid invoiceId");
-  }
-
-  const update: any = {};
-
-  if (payload.title !== undefined) {
-    const t = String(payload.title || "").trim();
-    if (!t) throw new CustomError(400, "Title cannot be empty");
-    update.title = t;
-  }
-
-  if (payload.description !== undefined) {
-    update.description = String(payload.description || "").trim();
-  }
-
-  if (payload.status !== undefined) {
-    const s = String(payload.status).trim() as InvoiceStatus;
-    if (!allowedStatus.includes(s)) {
-      throw new CustomError(400, `Invalid status. Allowed: ${allowedStatus.join(", ")}`);
-    }
-    update.status = s;
-  }
-
-  const invoice = await InvoiceModel.findOneAndUpdate(
-    { _id: invoiceId, isDeleted: false },
-    update,
-    { new: true, runValidators: true }
-  );
-
-  if (!invoice) throw new CustomError(404, "Invoice not found");
-  return invoice;
-};
-
-export const deleteInvoice = async (invoiceId: string) => {
-  if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
-    throw new CustomError(400, "Invalid invoiceId");
-  }
-
-  const invoice = await InvoiceModel.findOneAndUpdate(
-    { _id: invoiceId, isDeleted: false },
-    { isDeleted: true },
-    { new: true }
-  );
-
-  if (!invoice) throw new CustomError(404, "Invoice not found");
-  return invoice;
-};
-
-export const invoiceService = { createInvoice };
+export const invoiceService = { createInvoice, getInvoice, getAllInvoices, deleteInvoice };

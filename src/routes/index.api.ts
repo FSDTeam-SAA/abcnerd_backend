@@ -9,6 +9,7 @@ import progressRoute from "../modules/progress/progress.routes";
 import { subscriptionplanRoute } from "../modules/subscriptionplan/subscriptionplan.routes";
 import { subscriptionRoute } from "../modules/subscription/subscription.routes";
 import { notificationRoute } from "../modules/notification/notification.routes";
+import { invoiceRoute } from "../modules/invoice/invoice.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -16,6 +17,7 @@ router.use("/wordmanagement", wordmanagementRoute);
 router.use("/learning", learningRoute);
 router.use("/progress", progressRoute);
 router.use("/notification", notificationRoute);
+router.use("/invoice", invoiceRoute);
 
 //!Only payment routes are below
 router.use("/subscriptionplan", subscriptionplanRoute);
