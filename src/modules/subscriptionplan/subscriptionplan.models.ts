@@ -50,16 +50,14 @@ const subscriptionplanSchema = new Schema<ISubscriptionPlan>(
       default: null,
     },
 
-    limits: {
-      swipePerDay: {
+    credits: {
+      wordSwipe: {
         type: Number,
-        required: true,
-        min: -1,
+        default: 0,
       },
-      aiConversationsPerDay: {
+      aiChat: {
         type: Number,
-        required: true,
-        min: -1,
+        default: 0,
       },
     },
 

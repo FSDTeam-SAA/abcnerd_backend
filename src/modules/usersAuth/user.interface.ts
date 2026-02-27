@@ -38,6 +38,11 @@ export interface IUser extends Document {
   providerId: {
     type: String,
   },
+  balance: {
+    wordSwipe: number;
+    aiChat: number;
+    validityDate: Date;
+  };
 
   refreshToken: string | null;
   resetPassword: {

@@ -7,7 +7,6 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
 
     planId: {
@@ -18,22 +17,22 @@ const subscriptionSchema = new Schema<ISubscription>(
 
     status: {
       type: String,
-      enum: ["pending", "active", "past_due", "canceled", "expired","failed"],
+      enum: ["pending", "active", "past_due", "canceled", "expired", "failed"],
       default: "pending",
       index: true,
     },
 
     // billing cycle
     currentPeriodStart: { type: Date },
-    currentPeriodEnd: { type: Date }, // next billing date
+    currentPeriodEnd: { type: Date },
 
     cancelAtPeriodEnd: { type: Boolean, default: false },
     canceledAt: { type: Date },
 
     // Stripe references
     stripeCustomerId: { type: String, index: true },
-    stripeSubscriptionId: { type: String, index: true },
-    stripeCheckoutSessionId: { type: String, index: true },
+    stripeSubscriptionId: { type: String },
+    stripeCheckoutSessionId: { type: String },
 
     // optional audit/debug
     latestInvoiceId: { type: String },
@@ -44,10 +43,7 @@ const subscriptionSchema = new Schema<ISubscription>(
   { timestamps: true }
 );
 
-/**
- * ✅ One active subscription per user (recommended)
- * Note: partial unique index works on MongoDB replica set / Atlas.
- */
+// One active subscription per user
 subscriptionSchema.index(
   { userId: 1 },
   {
@@ -56,7 +52,7 @@ subscriptionSchema.index(
   }
 );
 
-// Ensure Stripe IDs not duplicated (optional but good)
+// Ensure Stripe IDs are not duplicated
 subscriptionSchema.index(
   { stripeSubscriptionId: 1 },
   { unique: true, sparse: true }
@@ -71,5 +67,3 @@ export const SubscriptionModel = mongoose.model<ISubscription>(
   "Subscription",
   subscriptionSchema
 );
-
-// export const SubscriptionPlanModel = mongoose.model<ISubscriptionPlan>("SubscriptionPlan", subscriptionplanSchema);

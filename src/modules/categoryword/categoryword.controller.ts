@@ -6,7 +6,7 @@ import { categorywordService } from "./categoryword.service";
 
 //TODO: create categoryword
 export const createCategoryWord = asyncHandler(async (req: Request, res: Response) => {
-  const data: ICreateCategoryWord = req.body;
+  const data = req.body;
   const categoryword = await categorywordService.createCategoryWord(data);
   ApiResponse.sendSuccess(res, 200, "CategoryWord created", categoryword);
 });

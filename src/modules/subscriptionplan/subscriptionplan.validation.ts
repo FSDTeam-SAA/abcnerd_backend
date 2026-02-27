@@ -33,15 +33,15 @@ export const createSubscriptionPlanSchema = z.object({
     .transform((val) => val.trim())
     .optional(), // make optional if you want to create plans before setting up Stripe
 
-  // Limits
-  limits: z.object({
-    swipePerDay: z
+  // Credits
+  credits: z.object({
+    wordSwipe: z
       .number()
       .int()
       .min(-1, "Use -1 for unlimited")
       .default(0),
 
-    aiConversationsPerDay: z
+    aiChat: z
       .number()
       .int()
       .min(-1, "Use -1 for unlimited")

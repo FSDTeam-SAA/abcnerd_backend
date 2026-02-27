@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { CategoryWord } from "./categoryword.interface";
 //TODO: customize as needed
 
 export const createCategoryWordSchema = z.object({
-  name: z.enum(Object.values(CategoryWord) as [string, ...string[]]),
+  name: z.string()
+    .max(100)
+    .transform(val => val.trim())
+    .refine(val => val.length > 0, { message: "Name cannot be empty" }),
   description: z
     .string()
     .max(500)
@@ -15,7 +17,10 @@ export const createCategoryWordSchema = z.object({
 
 
 export const updateCategoryWordSchema = z.object({
-  name: z.enum(Object.values(CategoryWord) as [string, ...string[]]).optional(),
+  name: z.string()
+    .max(100)
+    .optional()
+    .transform(val => val?.trim()),
   description: z
     .string()
     .max(500)
@@ -25,4 +30,3 @@ export const updateCategoryWordSchema = z.object({
 })
   .strict();
 
-  
