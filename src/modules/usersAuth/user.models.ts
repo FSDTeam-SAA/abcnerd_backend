@@ -63,6 +63,22 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: false,
     },
+    balance: {
+      wordSwipe: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      aiChat: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      validityDate: {
+        type: Date,
+        default: null,
+      },
+    },
 
 
     //! *** Delete user from database after 2 minutes if not verified ***
