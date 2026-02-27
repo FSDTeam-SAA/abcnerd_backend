@@ -5,7 +5,6 @@ import {
   wordActionService,
   getActiveSessionService,
 } from "./learning.service";
-import { CategoryWord } from "../categoryword/categoryword.interface";
 import { Types } from "mongoose";
 
 // POST /api/learning/session
@@ -23,7 +22,7 @@ export const createLearningSession = async (
 
     const session = await createLearningSessionService(
       userId as Types.ObjectId,
-      learningCategory as CategoryWord,
+      learningCategory as string,
       dailyGoal,
       wordType as string,
     );
