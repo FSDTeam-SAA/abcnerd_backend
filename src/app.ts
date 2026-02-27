@@ -12,6 +12,7 @@ import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
 import { googleLogin, kakaoLoginPage } from "./Oauth/google";
+import { StripeWebhook } from "./modules/subscription/subscription.controller";
 // import passport from "./Oauth/passport/kakao"; // not use a midlleware
 
 const app = express();
@@ -23,9 +24,14 @@ if (config.env === "development") {
 }
 
 app.use(cors({
-  origin: ["*", "http://localhost:3000", "http://localhost:3001"],
+  origin: ["*", "http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
   credentials: true
 }));
+app.post(
+  "/api/v1/payment/webhook",
+  express.raw({ type: "application/json" }),
+  StripeWebhook
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
