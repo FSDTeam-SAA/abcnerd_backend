@@ -12,6 +12,7 @@ import quizRoute from "../modules/quiz/quiz.routes";
 import quizattemptRoute from "../modules/quizattempt/quizattempt.routes";
 import { notificationRoute } from "../modules/notification/notification.routes";
 import { invoiceRoute } from "../modules/invoice/invoice.routes";
+import notebookRoute from "../modules/notebook/notebook.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -26,5 +27,6 @@ router.use("/subscriptionplan", subscriptionplanRoute);
 router.use("/payment", subscriptionRoute);
 router.use("/Quiz", quizRoute);
 router.use("/quiz-attempt", quizattemptRoute);
+router.use("/notebook", notebookRoute);
 
 export default router;

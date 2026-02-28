@@ -30,6 +30,10 @@ const learningSchema = new Schema<ILearning>(
       default: WordType.ENTIRE,
       required: true,
     },
+    swipeCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );

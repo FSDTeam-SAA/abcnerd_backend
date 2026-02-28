@@ -4,6 +4,7 @@ import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { Progress } from "../progress/progress.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
+import { userModel } from "../usersAuth/user.models";
 
 export const createLearningSessionService = async (
   userId: Types.ObjectId,
@@ -59,6 +60,17 @@ export const wordActionService = async (
 ) => {
   const oppositeField = action === "memorized" ? "reviewLater" : "memorized";
   const userProgress = await Progress.findOne({ user: userId });
+
+  const user = await userModel
+    .findById({
+      _id: userId,
+      balance: {
+        wordSwipe: { $gt: 0 },
+      },
+    })
+    .select("email balance");
+  if (user?.balance?.wordSwipe === 0)
+    throw new CustomError(400, "your limit is over");
 
   if (
     (userProgress?.memorized?.includes(new Types.ObjectId(wordId)) &&
@@ -116,7 +128,9 @@ export const wordActionService = async (
     },
     { new: true },
   );
-
+  // redece user balance
+  user!.balance.wordSwipe = user!.balance.wordSwipe - 1;
+  await user!.save();
   return { progress, shouldShowVideo };
 };
 

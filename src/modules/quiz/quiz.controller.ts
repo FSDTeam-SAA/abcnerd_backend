@@ -1,4 +1,5 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
+
 import {
   createQuizService,
   getAllQuizzesAdminService,
@@ -7,103 +8,55 @@ import {
   deleteQuizService,
   toggleQuizStatusService,
 } from "./quiz.service";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
-export const createQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await createQuizService(req.body);
-    res.status(201).json({
-      success: true,
-      message: "Quiz তৈরি হয়েছে",
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const createQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const quiz = await createQuizService(req.body);
 
-export const getAllQuizzesAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+  ApiResponse.sendSuccess(res, 201, "Quiz created successfully", quiz);
+});
+
+export const getAllQuizzesAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const quizzes = await getAllQuizzesAdminService();
-    res.status(200).json({
-      success: true,
+
+    ApiResponse.sendSuccess(res, 200, "All quizzes fetched successfully", {
       total: quizzes.length,
       data: quizzes,
     });
-  } catch (err) {
-    next(err);
-  }
-};
+  },
+);
 
-export const getQuizByIdAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getQuizByIdAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const quiz = await getQuizByIdAdminService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
 
-export const updateQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await updateQuizService(req.params.id as string, req.body );
-    res.status(200).json({
-      success: true,
-      message: "Quiz update হয়েছে",
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+    ApiResponse.sendSuccess(res, 200, "Quiz fetched successfully", quiz);
+  },
+);
 
-export const deleteQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    await deleteQuizService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: "Quiz delete হয়েছে",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const updateQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const quiz = await updateQuizService(req.params.id as string, req.body);
 
-export const toggleQuizStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+  ApiResponse.sendSuccess(res, 200, "Quiz updated successfully", quiz);
+});
+
+export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
+  await deleteQuizService(req.params.id as string);
+
+  ApiResponse.sendSuccess(res, 200, "Quiz deleted successfully", null);
+});
+
+export const toggleQuizStatus = asyncHandler(
+  async (req: Request, res: Response) => {
     const quiz = await toggleQuizStatusService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: `Quiz ${quiz.isActive ? "active" : "inactive"} করা হয়েছে`,
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      `Quiz ${quiz.isActive ? "activated" : "deactivated"} successfully`,
+      quiz,
+    );
+  },
+);

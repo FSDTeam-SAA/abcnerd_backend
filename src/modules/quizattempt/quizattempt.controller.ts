@@ -1,6 +1,7 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 
 import { Types } from "mongoose";
+
 import {
   getActiveQuizzesService,
   getAllAttemptsAdminService,
@@ -10,124 +11,87 @@ import {
   startQuizService,
   submitQuizService,
 } from "./quizattempt.service";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
 // ── User ──────────────────────────────────────────────────
 
-export const getActiveQuizzes = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getActiveQuizzes = asyncHandler(
+  async (req: Request, res: Response) => {
     const quizzes = await getActiveQuizzesService();
-    res
-      .status(200)
-      .json({ success: true, total: quizzes.length, data: quizzes });
-  } catch (err) {
-    next(err as Error);
-  }
-};
 
-export const startQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await startQuizService(req.params.quizId as string);
-    res.status(200).json({ success: true, data: quiz });
-  } catch (err) {
-    next(err as Error);
-  }
-};
-
-export const submitQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    const { answers } = req.body;
-
-    const result = await submitQuizService(
-      userId as Types.ObjectId,
-      req.params.quizId as string,
-      answers,
-    );
-    res.status(200).json({
-      success: true,
-      message: "Quiz submit হয়েছে",
-      data: result,
+    ApiResponse.sendSuccess(res, 200, "Active quizzes fetched successfully", {
+      total: quizzes.length,
+      data: quizzes,
     });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+  },
+);
 
-export const getAttemptHistory = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const startQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const quiz = await startQuizService(req.params.quizId as string);
+
+  ApiResponse.sendSuccess(res, 200, "Quiz started successfully", quiz);
+});
+
+export const submitQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id as Types.ObjectId;
+  const { answers } = req.body;
+
+  const result = await submitQuizService(
+    userId,
+    req.params.quizId as string,
+    answers,
+  );
+
+  ApiResponse.sendSuccess(res, 200, "Quiz submitted successfully", result);
+});
+
+export const getAttemptHistory = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempts = await getAttemptHistoryService(
-      req.user?._id as Types.ObjectId,
+      req.user!._id as Types.ObjectId,
     );
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
 
-export const getAttemptById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+    ApiResponse.sendSuccess(res, 200, "Attempt history fetched successfully", {
+      total: attempts.length,
+      data: attempts,
+    });
+  },
+);
+
+export const getAttemptById = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempt = await getAttemptByIdService(
-      req.user?._id as Types.ObjectId,
+      req.user!._id as Types.ObjectId,
       req.params.attemptId as string,
     );
-    res.status(200).json({ success: true, data: attempt });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+
+    ApiResponse.sendSuccess(res, 200, "Attempt fetched successfully", attempt);
+  },
+);
 
 // ── Admin ─────────────────────────────────────────────────
 
-export const getAllAttemptsAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getAllAttemptsAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempts = await getAllAttemptsAdminService();
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
 
-export const getAttemptsByQuizAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+    ApiResponse.sendSuccess(res, 200, "All attempts fetched successfully", {
+      total: attempts.length,
+      data: attempts,
+    });
+  },
+);
+
+export const getAttemptsByQuizAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempts = await getAttemptsByQuizAdminService(
       req.params.quizId as string,
     );
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+
+    ApiResponse.sendSuccess(res, 200, "Quiz attempts fetched successfully", {
+      total: attempts.length,
+      data: attempts,
+    });
+  },
+);
