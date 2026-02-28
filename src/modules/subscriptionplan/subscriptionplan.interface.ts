@@ -14,9 +14,9 @@ export interface ISubscriptionPlan {
   interval: BillingInterval;
   stripePriceId: string;
   stripeProductId?: string;
-  limits: {
-    swipePerDay: number;
-    aiConversationsPerDay: number;
+  credits: {
+    wordSwipe: number;
+    aiChat: number;
   };
   status: PlanStatus;
   isDeleted: boolean;

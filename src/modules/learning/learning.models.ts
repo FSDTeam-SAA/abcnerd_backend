@@ -1,6 +1,5 @@
 import { model, Schema } from "mongoose";
 import { ILearning } from "./learning.interface";
-import { CategoryWord } from "../categoryword/categoryword.interface";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
 
 const learningSchema = new Schema<ILearning>(
@@ -19,7 +18,6 @@ const learningSchema = new Schema<ILearning>(
     },
     learningCategory: {
       type: String,
-      enum: Object.values(CategoryWord),
       required: true,
     },
     isActive: {

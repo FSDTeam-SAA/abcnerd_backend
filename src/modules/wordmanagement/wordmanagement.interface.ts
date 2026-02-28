@@ -1,6 +1,5 @@
 
 import { Types } from "mongoose";
-import { CategoryWord } from "../categoryword/categoryword.interface";
 
 export enum WordType {
   FREQUENT = "Frequent",
@@ -30,7 +29,7 @@ export interface IWordmanagement {
   examples?: string[];
 
   categoryWordId: Types.ObjectId;
-  categoryType?: CategoryWord;
+  categoryType?: string; // categoryWord এর name
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;

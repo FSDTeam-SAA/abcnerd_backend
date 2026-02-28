@@ -1,5 +1,4 @@
 import { Types } from "mongoose";
-import { CategoryWord } from "../categoryword/categoryword.interface";
 import CustomError from "../../helpers/CustomError";
 import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
@@ -8,7 +7,7 @@ import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 
 export const createLearningSessionService = async (
   userId: Types.ObjectId,
-  category: CategoryWord,
+  category: string,
   dailyGoal: number,
   wordType: string,
 ) => {
@@ -30,7 +29,7 @@ export const createLearningSessionService = async (
 
 export const fetchLearningWordsService = async (
   userId: Types.ObjectId,
-  category: CategoryWord,
+  category: string,
   dailyGoal: number,
   wordType: string,
 ) => {

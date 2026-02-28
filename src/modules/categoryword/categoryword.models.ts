@@ -1,14 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import slugify from "slugify";
 import CustomError from "../../helpers/CustomError";
-import { CategoryWord, ICategoryWord } from "./categoryword.interface";
+import {  ICategoryWord } from "./categoryword.interface";
 
 //TODO: customize as needed
 
 const categorywordSchema = new Schema<ICategoryWord>({
   name: {
     type: String, required: true,
-    enum: Object.values(CategoryWord)
   },
   slug: {
     type: String,

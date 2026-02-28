@@ -5,7 +5,6 @@ import {
   wordActionService,
   getActiveSessionService,
 } from "./learning.service";
-import { CategoryWord } from "../categoryword/categoryword.interface";
 import { Types } from "mongoose";
 import { asyncHandler } from "../../utils/asyncHandler";
 import ApiResponse from "../../utils/apiResponse";
@@ -18,8 +17,8 @@ export const createLearningSession = asyncHandler(
     const { wordType } = req.query;
 
     const session = await createLearningSessionService(
-      userId,
-      learningCategory as CategoryWord,
+      userId as Types.ObjectId,
+      learningCategory as string,
       dailyGoal,
       wordType as string,
     );

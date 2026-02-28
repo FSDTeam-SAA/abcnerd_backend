@@ -2,14 +2,14 @@ import chalk from "chalk";
 import dotenv from "dotenv";
 dotenv.config();
 import { connectDatabase } from "./database/db";
-import app from "./app";
 import config from "./config/index";
+import { server } from "./app";
 
 const PORT = config.port ? Number(config.port) : 8000;
 
 connectDatabase()
   .then(() => {
-    app.listen(config.port, () => {
+    server.listen(config.port, () => {
       console.log(chalk.green(`Server running at http://localhost:${PORT}`));
     });
   })
