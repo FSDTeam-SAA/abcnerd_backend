@@ -106,17 +106,13 @@ export const wordActionService = async (
 
   const shouldShowVideo = newScore % 10 === 0;
 
-  const nextVideoAt = shouldShowVideo
-    ? (progress.nextVideoAt || 10) + 10
-    : progress.nextVideoAt;
-
   progress = await Progress.findOneAndUpdate(
     { user: userId },
     {
       score: newScore,
       streak: newStreak,
       lastActionDate: new Date(),
-      nextVideoAt,
+      nextVideoAt: shouldShowVideo,
     },
     { new: true },
   );

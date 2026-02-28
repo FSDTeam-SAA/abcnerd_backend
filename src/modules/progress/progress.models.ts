@@ -11,6 +11,7 @@ const progressSchema = new Schema<IProgress>(
     },
     memorized: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
     reviewLater: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
+    markFavorite: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
     streak: { type: Number, default: 0 },
     score: { type: Number, default: 0 },
     lastActionDate: { type: Date, default: null },
@@ -19,13 +20,13 @@ const progressSchema = new Schema<IProgress>(
   { timestamps: true },
 );
 
-progressSchema.pre("save", function (next) {
-  if (this.isModified("score")) {
-    if (this.score > 0 && this.score % 10 === 0) {
-      this.nextVideoAt = true;
-    } else {
-      this.nextVideoAt = false;
-    }
-  }
-});
+// progressSchema.pre("save", function (next) {
+//   if (this.isModified("score")) {
+//     if (this.score > 0 && this.score % 10 === 0) {
+//       this.nextVideoAt = true;
+//     } else {
+//       this.nextVideoAt = false;
+//     }
+//   }
+// });
 export const Progress = model<IProgress>("Progress", progressSchema);

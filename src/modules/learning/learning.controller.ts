@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import {
   createLearningSessionService,
   fetchLearningWordsService,
@@ -6,19 +6,15 @@ import {
   getActiveSessionService,
 } from "./learning.service";
 import { Types } from "mongoose";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
 // POST /api/learning/session
-export const createLearningSession = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user!._id;
+export const createLearningSession = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user!._id as Types.ObjectId;
     const { dailyGoal, learningCategory } = req.body;
     const { wordType } = req.query;
-
-    // console.log(wordType);
 
     const session = await createLearningSessionService(
       userId as Types.ObjectId,
@@ -27,71 +23,53 @@ export const createLearningSession = async (
       wordType as string,
     );
 
-    res.status(201).json({
-      success: true,
-      message: "Learning session started successfully",
-      data: session,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+    ApiResponse.sendSuccess(
+      res,
+      201,
+      "Learning session started successfully",
+      session,
+    );
+  },
+);
 
 // GET /api/learning/words
-export const fetchLearningWords = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user!._id;
+export const fetchLearningWords = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user!._id as Types.ObjectId;
 
-    // active session থেকে category আর dailyGoal নাও
-    const session = await getActiveSessionService(userId as Types.ObjectId);
+    const session = await getActiveSessionService(userId);
 
-    console.log(session.wordType);
+    if (!session) {
+      return ApiResponse.sendError(
+        res,
+        400,
+        "No active learning session found",
+      );
+    }
 
     const words = await fetchLearningWordsService(
-      userId as Types.ObjectId,
+      userId,
       session.learningCategory,
       session.dailyGoal,
       session.wordType,
     );
 
-    res.status(200).json({
-      success: true,
-      message: "words found successfully",
-      totalWords: words.length,
+    ApiResponse.sendSuccess(res, 200, "Words fetched successfully", {
+      total: words.length,
       data: words,
     });
-  } catch (err) {
-    next(err);
-  }
-};
+  },
+);
 
 // PATCH /api/learning/word-action
-export const wordAction = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    const { wordId, action } = req.body;
+export const wordAction = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?._id as Types.ObjectId;
+  const { wordId, action } = req.body;
 
-    const result = await wordActionService(
-      userId as Types.ObjectId,
-      wordId,
-      action,
-    );
+  const result = await wordActionService(userId, wordId, action);
 
-    res.status(200).json({
-      success: true,
-      message: `Word marked as "${action}`,
-      data: result.progress,
-      shouldShowVideo: result.shouldShowVideo, // true হলে frontend video দেখাবে
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+  ApiResponse.sendSuccess(res, 200, `Word marked as "${action}" successfully`, {
+    progress: result.progress,
+    shouldShowVideo: result.shouldShowVideo,
+  });
+});
