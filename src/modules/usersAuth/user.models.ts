@@ -84,7 +84,7 @@ const userSchema = new Schema<IUser>(
     //! *** Delete user from database after 2 minutes if not verified ***
     verificationOtpExpire: {
       type: Date,
-      index: { expires: 0 },
+      // index: { expires: 0 },
     },
     refreshToken: {
       type: String,
