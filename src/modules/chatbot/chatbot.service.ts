@@ -139,7 +139,7 @@ const chatWithHistory = async (message: string, history: ChatHistory = []) => {
     ];
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents,
       config: {
         maxOutputTokens: 2048,
@@ -211,7 +211,7 @@ const generateChatbotDescription = async (title: string) => {
 
   return await handleGeminiError(async () => {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Generate a short professional description (max 100 words) 
             for an AI chatbot named "${title}". 
             Return only the description text, no extra commentary.`,
