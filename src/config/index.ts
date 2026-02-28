@@ -58,6 +58,9 @@ const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET as string,
   },
 
+    /* ================= Gemini API ================= */
+  geminiApiKey: process.env.GEMINI_API_KEY as string,
+
   /* ================= Frontend ================= */
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
 

@@ -12,6 +12,7 @@ import quizRoute from "../modules/quiz/quiz.routes";
 import quizattemptRoute from "../modules/quizattempt/quizattempt.routes";
 import { notificationRoute } from "../modules/notification/notification.routes";
 import { invoiceRoute } from "../modules/invoice/invoice.routes";
+import { chatbotRoute } from "../modules/chatbot/chatbot.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -20,6 +21,7 @@ router.use("/learning", learningRoute);
 router.use("/progress", progressRoute);
 router.use("/notification", notificationRoute);
 router.use("/invoice", invoiceRoute);
+router.use("/chatbot", chatbotRoute);
 
 //!Only payment routes are below
 router.use("/subscriptionplan", subscriptionplanRoute);
