@@ -1,26 +1,40 @@
 import { Router } from "express";
+
 import { authGuard } from "../../middleware/auth.middleware";
 import {
-  getAllAttempts,
+  getActiveQuizzes,
+  getAllAttemptsAdmin,
   getAttemptById,
   getAttemptHistory,
-  getAttemptsByQuiz,
+  getAttemptsByQuizAdmin,
+  startQuiz,
+  submitQuiz,
 } from "./quizattempt.controller";
 import { permission } from "../../middleware/permission.middleware";
+import { validateRequest } from "../../middleware/validateRequest.middleware";
+import { submitQuizValidation } from "./quizattempt.validation";
 
 const router = Router();
 
-// ── User routes ──
-router.get("/", authGuard, getAttemptHistory);
-router.get("/:attemptId", authGuard, getAttemptById);
+// ── User ──
+router.get("/", authGuard, getActiveQuizzes);
+router.get("/start/:quizId", authGuard, startQuiz);
+router.post(
+  "/submit/:quizId",
+  authGuard,
+  // validateRequest(submitQuizValidation),
+  submitQuiz,
+);
+router.get("/history", authGuard, getAttemptHistory);
+router.get("/history/:attemptId", authGuard, getAttemptById);
 
-// ── Admin routes ──
-router.get("/admin/all", authGuard, permission(["admin"]), getAllAttempts);
+// ── Admin ──
+router.get("/admin/all", authGuard, permission(["admin"]), getAllAttemptsAdmin);
 router.get(
   "/admin/quiz/:quizId",
   authGuard,
   permission(["admin"]),
-  getAttemptsByQuiz,
+  getAttemptsByQuizAdmin,
 );
-
-export default router;
+const quizattemptRoute = router;
+export default quizattemptRoute;

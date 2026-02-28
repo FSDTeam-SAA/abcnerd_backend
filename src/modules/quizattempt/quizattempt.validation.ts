@@ -1,6 +1,14 @@
 import { z } from "zod";
-//TODO: customize as needed
-export const createQuizAttemptSchema = z.object({
-  title: z.string().min(3).max(50).transform(val => val.trim()),
-  description: z.string().max(500).optional().transform(val => val?.trim()),
+
+export const submitQuizValidation = z.object({
+  body: z.object({
+    answers: z
+      .array(
+        z.object({
+          questionId: z.string({ message: "questionId দাও" }),
+          selectedAnswer: z.string({ message: "selectedAnswer দাও" }),
+        }),
+      )
+      .min(1, "কমপক্ষে ১টা answer দাও"),
+  }),
 });

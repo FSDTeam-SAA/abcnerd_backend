@@ -1,23 +1,19 @@
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
-export interface IOption {
-  _id: Types.ObjectId;
-  text: string;
-}
-
-export interface IQuestion {
+// IQuestion কে Document থেকে extend করতে হবে যাতে mongoose-এর internal methods পাওয়া যায়
+export interface IQuestion extends Document {
   _id: Types.ObjectId;
   questionText: string;
-  options: IOption[];
-  correctOption: Types.ObjectId; // option এর _id
-  wordRef?: Types.ObjectId; // কোন word থেকে এসেছে (optional ref)
+  options: string[];
+  correctAnswer: string;
+  wordRef?: Types.ObjectId; // any এর বদলে Types.ObjectId দেওয়া ভালো
 }
 
-export interface IQuiz {
+export interface IQuiz extends Document {
   _id: Types.ObjectId;
   title: string;
   description?: string;
-  category: Types.ObjectId; // CategoryWord ref
+  category: Types.ObjectId;
   questions: IQuestion[];
   isActive: boolean;
   createdAt?: Date;

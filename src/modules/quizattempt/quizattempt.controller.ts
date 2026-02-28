@@ -1,91 +1,133 @@
 import { NextFunction, Request, Response } from "express";
+
+import { Types } from "mongoose";
 import {
-  getAllAttemptsService,
+  getActiveQuizzesService,
+  getAllAttemptsAdminService,
   getAttemptByIdService,
   getAttemptHistoryService,
-  getAttemptsByQuizService,
+  getAttemptsByQuizAdminService,
+  startQuizService,
+  submitQuizService,
 } from "./quizattempt.service";
-import { Types } from "mongoose";
 
-// ── User: নিজের সব attempt history ──
+// ── User ──────────────────────────────────────────────────
+
+export const getActiveQuizzes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quizzes = await getActiveQuizzesService();
+    res
+      .status(200)
+      .json({ success: true, total: quizzes.length, data: quizzes });
+  } catch (err) {
+    next(err as Error);
+  }
+};
+
+export const startQuiz = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quiz = await startQuizService(req.params.quizId as string);
+    res.status(200).json({ success: true, data: quiz });
+  } catch (err) {
+    next(err as Error);
+  }
+};
+
+export const submitQuiz = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?._id;
+    const { answers } = req.body;
+
+    const result = await submitQuizService(
+      userId as Types.ObjectId,
+      req.params.quizId as string,
+      answers,
+    );
+    res.status(200).json({
+      success: true,
+      message: "Quiz submit হয়েছে",
+      data: result,
+    });
+  } catch (err) {
+    next(err as Error);
+  }
+};
+
 export const getAttemptHistory = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user?._id;
-    const attempts = await getAttemptHistoryService(userId as Types.ObjectId);
-
-    res.status(200).json({
-      success: true,
-      total: attempts.length,
-      data: attempts,
-    });
+    const attempts = await getAttemptHistoryService(
+      req.user?._id as Types.ObjectId,
+    );
+    res
+      .status(200)
+      .json({ success: true, total: attempts.length, data: attempts });
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 };
 
-// ── User: একটা specific attempt এর details ──
 export const getAttemptById = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user?._id;
-    const { attemptId } = req.params;
-
     const attempt = await getAttemptByIdService(
-      userId as Types.ObjectId,
-      attemptId as string,
+      req.user?._id as Types.ObjectId,
+      req.params.attemptId as string,
     );
-
-    res.status(200).json({
-      success: true,
-      data: attempt,
-    });
+    res.status(200).json({ success: true, data: attempt });
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 };
 
-// ── Admin: একটা quiz এর সব attempts ──
-export const getAttemptsByQuiz = async (
+// ── Admin ─────────────────────────────────────────────────
+
+export const getAllAttemptsAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { quizId } = req.params;
-    const attempts = await getAttemptsByQuizService(quizId as string);
-
-    res.status(200).json({
-      success: true,
-      total: attempts.length,
-      data: attempts,
-    });
+    const attempts = await getAllAttemptsAdminService();
+    res
+      .status(200)
+      .json({ success: true, total: attempts.length, data: attempts });
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 };
 
-// ── Admin: সব attempts ──
-export const getAllAttempts = async (
+export const getAttemptsByQuizAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const attempts = await getAllAttemptsService();
-
-    res.status(200).json({
-      success: true,
-      total: attempts.length,
-      data: attempts,
-    });
+    const attempts = await getAttemptsByQuizAdminService(
+      req.params.quizId as string,
+    );
+    res
+      .status(200)
+      .json({ success: true, total: attempts.length, data: attempts });
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 };

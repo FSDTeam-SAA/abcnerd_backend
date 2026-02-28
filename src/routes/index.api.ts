@@ -8,6 +8,8 @@ import learningRoute from "../modules/learning/learning.routes";
 import progressRoute from "../modules/progress/progress.routes";
 import { subscriptionplanRoute } from "../modules/subscriptionplan/subscriptionplan.routes";
 import { subscriptionRoute } from "../modules/subscription/subscription.routes";
+import quizRoute from "../modules/quiz/quiz.routes";
+import quizattemptRoute from "../modules/quizattempt/quizattempt.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -18,5 +20,7 @@ router.use("/progress", progressRoute);
 //!Only payment routes are below
 router.use("/subscriptionplan", subscriptionplanRoute);
 router.use("/payment", subscriptionRoute);
+router.use("/Quiz", quizRoute);
+router.use("/quiz-attempt", quizattemptRoute);
 
 export default router;

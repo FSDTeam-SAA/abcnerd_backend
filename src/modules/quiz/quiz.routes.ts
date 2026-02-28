@@ -1,44 +1,38 @@
 import { Router } from "express";
 import {
   createQuiz,
-  getAllQuizzes,
-  getQuizById,
+  getAllQuizzesAdmin,
+  getQuizByIdAdmin,
   updateQuiz,
   deleteQuiz,
-  getActiveQuizzes,
-  startQuiz,
-  submitQuiz,
-  getAttemptHistory,
-  getNotebook,
+  toggleQuizStatus,
 } from "./quiz.controller";
 import { authGuard } from "../../middleware/auth.middleware";
 import { permission } from "../../middleware/permission.middleware";
 
 const router = Router();
 
-// ── Admin routes ──
-router.post(
-  "/",
+router.post("/create-quiz", authGuard, permission(["admin"]), createQuiz);
+router.get(
+  "/get-all-quiz",
   authGuard,
   permission(["admin"]),
-  //   validateRequest(createQuizValidation),
-  createQuiz,
+  getAllQuizzesAdmin,
 );
-router.get("/admin/all", authGuard, permission(["admin"]), getAllQuizzes);
-router.get("/admin/:id", authGuard, permission(["admin"]), getQuizById);
-router.patch("/:id", authGuard, permission(["admin"]), updateQuiz);
-router.delete("/:id", authGuard, permission(["admin"]), deleteQuiz);
-
-// ── User routes ──
-router.get("/", authGuard, getActiveQuizzes);
-router.get("/start/:id", authGuard, startQuiz);
-router.post(
-  "/submit/:id",
+router.get(
+  "/get-single-quiz/:id",
   authGuard,
-  //   validateRequest(submitQuizValidation),
-  submitQuiz,
+  permission(["admin"]),
+  getQuizByIdAdmin,
 );
-router.get("/history/attempts", authGuard, getAttemptHistory);
-router.get("/notebook", authGuard, getNotebook);
+router.patch("/update-quiz/:id", authGuard, permission(["admin"]), updateQuiz);
+router.delete("/delete-quiz/:id", authGuard, permission(["admin"]), deleteQuiz);
+router.patch(
+  "/:id/toggle-status",
+  authGuard,
+  permission(["admin"]),
+  toggleQuizStatus,
+);
 
-export default router;
+const quizRoute = router;
+export default quizRoute;

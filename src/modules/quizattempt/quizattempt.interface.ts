@@ -2,8 +2,12 @@ import { Types } from "mongoose";
 
 export interface IAnsweredQuestion {
   question: Types.ObjectId;
-  selectedOption: Types.ObjectId;
+  questionText: string;
+  options: string[];
+  selectedAnswer: string;
+  correctAnswer: string;
   isCorrect: boolean;
+  wordRef?: Types.ObjectId;
 }
 
 export interface IQuizAttempt {
@@ -13,5 +17,6 @@ export interface IQuizAttempt {
   answeredQuestions: IAnsweredQuestion[];
   score: number;
   totalQuestions: number;
+  percentage: number;
   completedAt: Date;
 }
