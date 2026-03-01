@@ -44,6 +44,15 @@ export interface IUser extends Document {
     validityDate: Date;
   };
 
+  subscription: {
+    subscriptionId: string;
+    plan: SubscriptionPlan;
+    status: SubscriptionStatus;
+    startDate: Date;
+    endDate: Date;
+    lastResetDate?: Date;
+  };
+
   refreshToken: string | null;
   resetPassword: {
     otp: string | null;
@@ -75,4 +84,38 @@ export interface AppleLoginResult {
   name?: string;
   accessToken: string;
   refreshToken: string;
+}
+
+
+export enum SubscriptionPlan {
+  BASIC = "basic",
+  PRO = "pro",
+  PREMIUM = "premium",
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = "active",
+  EXPIRED = "expired",
+  PENDING = "pending",
+  FAILED = "failed",
+  CANCELED = "cancelled",
+}
+
+// Daily balance limits per plan
+export const PLAN_DAILY_LIMITS: Record<
+  SubscriptionPlan,
+  { wordSwipe: number; aiChat: number }
+> = {
+  [SubscriptionPlan.BASIC]: { wordSwipe: 10, aiChat: 5 },
+  [SubscriptionPlan.PRO]: { wordSwipe: 30, aiChat: 15 },
+  [SubscriptionPlan.PREMIUM]: { wordSwipe: 100, aiChat: 50 },
+};
+
+// Extend your existing IUser interface with these fields
+export interface ISubscription {
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  startDate: Date;
+  endDate: Date;         // same as balance.validityDate — source of truth
+  lastResetDate?: Date;  // tracks when balance was last reset (prevents double-reset)
 }
