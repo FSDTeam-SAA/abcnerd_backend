@@ -2,80 +2,76 @@ import type { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import ApiResponse from "../../utils/apiResponse";
 import { chatbotService } from "./chatbot.service";
-import { ICreateChatbot, IUpdateChatbot, IChatbotQuery } from "./chatbot.interface";
+import type { IChatIdentity } from "./chatbot.interface";
+import { userModel } from "../usersAuth/user.models";
 
-// ─────────────────────────────────────────
-// CRUD
-// ─────────────────────────────────────────
 
-export const createChatbot = asyncHandler(async (req: Request, res: Response) => {
-  const data: ICreateChatbot = req.body;
-  const item = await chatbotService.createChatbot(data);
-  ApiResponse.sendSuccess(res, 201, "Chatbot created successfully", item);
-});
 
-export const getAllChatbots = asyncHandler(async (req: Request, res: Response) => {
-  const query = req.query as unknown as IChatbotQuery;
-  const result = await chatbotService.getAllChatbots(query);
-  ApiResponse.sendSuccess(res, 200, "Chatbots fetched successfully", result);
-});
-
-export const getChatbotById = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const item = await chatbotService.getChatbotById(id as string);
-  ApiResponse.sendSuccess(res, 200, "Chatbot fetched successfully", item);
-});
-
-export const getChatbotBySlug = asyncHandler(async (req: Request, res: Response) => {
-  const { slug } = req.params;
-  const item = await chatbotService.getChatbotBySlug(slug as string);
-  ApiResponse.sendSuccess(res, 200, "Chatbot fetched successfully", item);
-});
-
-export const updateChatbot = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const data: IUpdateChatbot = req.body;
-  const item = await chatbotService.updateChatbot(id as string, data);
-  ApiResponse.sendSuccess(res, 200, "Chatbot updated successfully", item);
-});
-
-export const deleteChatbot = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  await chatbotService.deleteChatbot(id as string );
-  ApiResponse.sendSuccess(res, 200, "Chatbot deleted successfully", null);
-});
-
-export const toggleStatus = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const item = await chatbotService.toggleStatus(id as string);
-  ApiResponse.sendSuccess(res, 200, `Chatbot status set to ${item.status}`, item);
-});
-
-// ─────────────────────────────────────────
-// GEMINI
-// ─────────────────────────────────────────
-
+// start chat without history (one-shot)
 export const chat = asyncHandler(async (req: Request, res: Response) => {
   const { message } = req.body;
-  const result = await chatbotService.chat(message);
+
+  const { _id: userId } = req.user as any;
+  const user = await userModel.findById(userId).select("balance");
+  //check if user has enough balance to chat
+  if (user && user.balance.aiChat <= 0) {
+    return ApiResponse.sendError(res, 403, "You reached your daily chat limit.");
+  }
+
+  const result = await chatbotService.chat(message, { userId });
+
+  //decrease balance if user chatting successfully — costs more tokens
+
+  if (user) {
+    user.balance.aiChat -= 1; //decrease balance by 1 for each chat
+    await user.save();
+  }
   ApiResponse.sendSuccess(res, 200, "Message sent", result);
 });
 
+// chat with history (loads today's history as context)
 export const chatWithHistory = asyncHandler(async (req: Request, res: Response) => {
-  const { message, history = [] } = req.body;
-  const result = await chatbotService.chatWithHistory(message, history);
+  const { message } = req.body;
+  const { _id: userId } = req.user as any;
+  //check if user has enough balance to chat
+  const user = await userModel.findById(userId)
+  if (user && user.balance.aiChat <= 0) {
+    return ApiResponse.sendError(res, 403, "You reached your daily chat limit.");
+  }
+
+  const result = await chatbotService.chatWithHistory(message, { userId });
+
+  //decrease balance if user chatting successfully — costs more tokens
+
+  if (user) {
+    user.balance.aiChat -= 1; //decrease balance by 1 for each chat
+    await user.save();
+  }
   ApiResponse.sendSuccess(res, 200, "Message sent", result);
 });
 
-export const chatWithBot = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { message, history = [] } = req.body;
-  const result = await chatbotService.chatWithBot(id as string, message, history);
-  ApiResponse.sendSuccess(res, 200, "Message sent", result);
+// get all history for current user/session
+export const getHistory = asyncHandler(async (req: Request, res: Response) => {
+  const { _id: userId } = req.user as any;
+
+  const result = await chatbotService.getHistory({ userId });
+  ApiResponse.sendSuccess(res, 200, "History fetched", result);
 });
 
-export const generateDescription = asyncHandler(async (req: Request, res: Response) => {
-  const { title } = req.body;
-  const result = await chatbotService.generateChatbotDescription(title);
-  ApiResponse.sendSuccess(res, 200, "Description generated", result);
+// get history for a specific day
+export const getHistoryByDay = asyncHandler(async (req: Request, res: Response) => {
+  const { dayKey } = req.params;
+  const { _id: userId } = req.user as any;
+
+  const result = await chatbotService.getHistoryByDay({ userId }, dayKey as string);
+  ApiResponse.sendSuccess(res, 200, "History fetched", result);
+});
+
+// soft-delete history for a specific day
+export const deleteHistoryByDay = asyncHandler(async (req: Request, res: Response) => {
+  const { dayKey } = req.params;
+  const { _id: userId } = req.user as any;
+
+  await chatbotService.deleteHistoryByDay({ userId }, dayKey as string);
+  ApiResponse.sendSuccess(res, 200, "History deleted", null);
 });

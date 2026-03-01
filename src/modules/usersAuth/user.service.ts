@@ -68,7 +68,7 @@ export const userService = {
     if (!user) throw new CustomError(400, "user not found");
 
     //check account status
-    if (!user.isVerified) throw new CustomError(400, "Account not verified");
+    // if (!user.isVerified) throw new CustomError(400, "Account not verified");
 
 
     const isPasswordMatch = await bcryptjs.compare(password, user.password);
