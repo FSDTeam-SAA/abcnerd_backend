@@ -14,4 +14,5 @@ router.get("/quiz/:quizId", authGuard, getNotebookByQuiz);
 router.delete("/entry/:entryId", authGuard, deleteNotebookEntry);
 router.delete("/clear", authGuard, clearNotebook);
 
-export default router;
+const notebookRoute = router;
+export default notebookRoute;

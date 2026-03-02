@@ -1,27 +1,65 @@
 import { NextFunction, Request, Response } from "express";
 import {
-  createQuizService,
+  generateQuizService,
+  getUserQuizHistoryService,
+  getQuizByIdService,
   getAllQuizzesAdminService,
-  getQuizByIdAdminService,
-  updateQuizService,
-  deleteQuizService,
-  toggleQuizStatusService,
 } from "./quiz.service";
+import { Types } from "mongoose";
 
-export const createQuiz = async (
+export const generateQuiz = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const quiz = await createQuizService(req.body);
-    res.status(201).json({
+    const userId = req.user?._id;
+    const { categoryId, questionCount } = req.query;
+
+    const quiz = await generateQuizService(
+      userId as Types.ObjectId,
+      categoryId as string,
+      questionCount ? Number(questionCount) : 10,
+    );
+
+    res.status(201).json({ success: true, data: quiz });
+  } catch (err) {
+    next(err as Error);
+  }
+};
+
+export const getUserQuizHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quizzes = await getUserQuizHistoryService(
+      req.user?._id as Types.ObjectId,
+    );
+    res.status(200).json({
       success: true,
-      message: "Quiz তৈরি হয়েছে",
-      data: quiz,
+      total: quizzes.length,
+      data: quizzes,
     });
   } catch (err) {
-    next(err);
+    next(err as Error);
+  }
+};
+
+export const getQuizById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quiz = await getQuizByIdService(
+      req.user?._id as Types.ObjectId,
+      req.params.quizId as string,
+    );
+    res.status(200).json({ success: true, data: quiz });
+  } catch (err) {
+    next(err as Error);
   }
 };
 
@@ -38,72 +76,6 @@ export const getAllQuizzesAdmin = async (
       data: quizzes,
     });
   } catch (err) {
-    next(err);
-  }
-};
-
-export const getQuizByIdAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await getQuizByIdAdminService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const updateQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await updateQuizService(req.params.id as string, req.body );
-    res.status(200).json({
-      success: true,
-      message: "Quiz update হয়েছে",
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const deleteQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    await deleteQuizService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: "Quiz delete হয়েছে",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const toggleQuizStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await toggleQuizStatusService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: `Quiz ${quiz.isActive ? "active" : "inactive"} করা হয়েছে`,
-      data: quiz,
-    });
-  } catch (err) {
-    next(err);
+    next(err as Error);
   }
 };

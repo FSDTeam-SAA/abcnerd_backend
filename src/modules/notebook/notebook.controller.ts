@@ -1,91 +1,67 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
+
+import { Types } from "mongoose";
+
 import {
   getNotebookService,
   getNotebookByQuizService,
   deleteNotebookEntryService,
   clearNotebookService,
 } from "./notebook.service";
-import { Types } from "mongoose";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
-// ── User এর পুরো notebook ──
-export const getNotebook = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    const notebook = await getNotebookService(userId as Types.ObjectId);
+// ── Get Full Notebook ─────────────────────────────────────
 
-    res.status(200).json({
-      success: true,
-      total: notebook.entries.length,
-      data: notebook,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const getNotebook = asyncHandler(async (req: Request, res: Response) => {
+  const notebook = await getNotebookService(req.user!._id as Types.ObjectId);
 
-// ── একটা specific quiz এর wrong answers ──
-export const getNotebookByQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    const { quizId } = req.params;
+  ApiResponse.sendSuccess(res, 200, "Notebook fetched successfully", {
+    total: notebook.entries.length,
+    data: notebook,
+  });
+});
 
-    const entries = await getNotebookByQuizService(userId as Types.ObjectId, quizId as string);
+// ── Get Notebook Entries By Quiz ──────────────────────────
 
-    res.status(200).json({
-      success: true,
+export const getNotebookByQuiz = asyncHandler(
+  async (req: Request, res: Response) => {
+    const entries = await getNotebookByQuizService(
+      req.user!._id as Types.ObjectId,
+      req.params.quizId as string,
+    );
+
+    ApiResponse.sendSuccess(res, 200, "Notebook entries fetched successfully", {
       total: entries.length,
       data: entries,
     });
-  } catch (err) {
-    next(err);
-  }
-};
+  },
+);
 
-// ── একটা entry delete ──
-export const deleteNotebookEntry = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    const { entryId } = req.params;
+// ── Delete Single Notebook Entry ──────────────────────────
 
-    const notebook = await deleteNotebookEntryService(userId as Types.ObjectId, entryId as string);
+export const deleteNotebookEntry = asyncHandler(
+  async (req: Request, res: Response) => {
+    const notebook = await deleteNotebookEntryService(
+      req.user!._id as Types.ObjectId,
+      req.params.entryId as string,
+    );
 
-    res.status(200).json({
-      success: true,
-      message: "Entry delete হয়েছে",
-      data: notebook,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Notebook entry deleted successfully",
+      notebook,
+    );
+  },
+);
 
-// ── পুরো notebook clear ──
-export const clearNotebook = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?._id;
-    await clearNotebookService(userId as Types.ObjectId);
+// ── Clear Entire Notebook ─────────────────────────────────
 
-    res.status(200).json({
-      success: true,
-      message: "Notebook clear হয়েছে",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+export const clearNotebook = asyncHandler(
+  async (req: Request, res: Response) => {
+    await clearNotebookService(req.user!._id as Types.ObjectId);
+
+    ApiResponse.sendSuccess(res, 200, "Notebook cleared successfully", null);
+  },
+);

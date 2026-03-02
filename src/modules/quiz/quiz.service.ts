@@ -2,134 +2,134 @@ import { Types } from "mongoose";
 
 import CustomError from "../../helpers/CustomError";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
-import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
+import { Progress } from "../progress/progress.models";
+import { QuestionModel } from "../question/question.models";
+import { NotebookModel } from "../notebook/notebook.models";
 import { QuizModel } from "./quiz.models";
 
-// ── Create Quiz ──────────────────────────────────────────
-export const createQuizService = async (payload: any) => {
-  // category exist করে কিনা check
-  const category = await CategoryWordModel.findById(payload.category);
-  if (!category) throw new CustomError(404, "Category পাওয়া যায়নি");
+// ── Generate Quiz (User) ──────────────────────────────────
+export const generateQuizService = async (
+  userId: Types.ObjectId,
+  categoryId: string,
+  questionCount: number = 10,
+) => {
+  if (!Types.ObjectId.isValid(categoryId))
+    throw new CustomError(400, "Invalid category id");
 
-  // প্রতিটা question validate করো
-  for (const q of payload.questions) {
-    // duplicate options check
-    const uniqueOptions = new Set(q.options);
-    if (uniqueOptions.size !== q.options.length) {
-      throw new CustomError(
-        400,
-        `"${q.questionText}" — duplicate options দেওয়া যাবে না`,
-      );
-    }
+  const category = await CategoryWordModel.findById(categoryId);
+  if (!category) throw new CustomError(404, "Category not found");
 
-    // correctAnswer options এর মধ্যে আছে কিনা
-    if (!q.options.includes(q.correctAnswer)) {
-      throw new CustomError(
-        400,
-        `"${q.questionText}" — correctAnswer অবশ্যই options এর মধ্যে একটা হতে হবে`,
-      );
-    }
+  // user progress আনো
+  const progress = await Progress.findOne({ user: userId });
+  const memorizedWords = progress?.memorized || [];
+  const attemptedQuestions = progress?.attemptedQuestions || [];
 
-    // wordRef দিলে সেটা exist করে কিনা check
-    if (q.wordRef) {
-      const word = await WordmanagementModel.findById(q.wordRef);
-      if (!word)
-        throw new CustomError(404, `wordRef "${q.wordRef}" পাওয়া যায়নি`);
-    }
-  }
+  if (memorizedWords.length === 0)
+    throw new CustomError(
+      400,
+      "You have not memorized any words yet. Memorize some words first to take a quiz.",
+    );
 
-  const quiz = await QuizModel.create(payload);
-  return quiz;
+  // এই category র active questions আনো
+  const allQuestions = await QuestionModel.find({
+    category: categoryId,
+    isActive: true,
+  });
+
+  if (!allQuestions.length)
+    throw new CustomError(404, "No questions found for this category");
+
+  // memorized word match + already attempted বাদ দাও
+  const memorizedStrs = memorizedWords.map((id) => id.toString());
+  const attemptedStrs = attemptedQuestions.map((id) => id.toString());
+
+  const eligibleQuestions = allQuestions.filter(
+    (q) =>
+      q.wordRef &&
+      memorizedStrs.includes(q.wordRef.toString()) &&
+      !attemptedStrs.includes(q._id.toString()),
+  );
+
+  if (eligibleQuestions.length === 0)
+    throw new CustomError(
+      400,
+      "You have attempted all available questions for your memorized words. Memorize more words to unlock new questions.",
+    );
+
+  // Spaced Repetition — notebook এ wrong থাকা questions আগে
+  const notebook = await NotebookModel.findOne({ user: userId });
+  const wrongQuestionIds = new Set(
+    (notebook?.entries || []).map((e) => e.question.toString()),
+  );
+
+  const wrongFirst = eligibleQuestions.filter((q) =>
+    wrongQuestionIds.has(q._id.toString()),
+  );
+  const others = eligibleQuestions
+    .filter((q) => !wrongQuestionIds.has(q._id.toString()))
+    .sort(() => Math.random() - 0.5);
+
+  const finalQuestions = [...wrongFirst, ...others].slice(0, questionCount);
+
+  // Quiz db তে save করো
+  const quiz = await QuizModel.create({
+    user: userId,
+    category: categoryId,
+    questions: finalQuestions.map((q) => q._id),
+    status: "ongoing",
+    totalQuestions: finalQuestions.length,
+  });
+
+  // correctAnswer hide করে পাঠাও
+  const safeQuestions = finalQuestions.map((q) => ({
+    _id: q._id,
+    questionText: q.questionText,
+    options: q.options,
+    wordRef: q.wordRef,
+  }));
+
+  return {
+    quizId: quiz._id,
+    category: { _id: category._id, name: category.name },
+    totalQuestions: finalQuestions.length,
+    timePerQuestion: 60,
+    questions: safeQuestions,
+  };
 };
 
-// ── Get All Quizzes (Admin) ───────────────────────────────
-export const getAllQuizzesAdminService = async () => {
-  const quizzes = await QuizModel.find()
+// ── Get User's Quiz History ───────────────────────────────
+export const getUserQuizHistoryService = async (userId: Types.ObjectId) => {
+  const quizzes = await QuizModel.find({ user: userId })
     .populate("category", "name slug")
+    .populate("attempt")
     .sort({ createdAt: -1 });
 
-  if (!quizzes.length) throw new CustomError(404, "কোনো quiz পাওয়া যায়নি");
+  if (!quizzes.length) throw new CustomError(404, "No quiz history found");
   return quizzes;
 };
 
-// ── Get Single Quiz (Admin) ───────────────────────────────
-export const getQuizByIdAdminService = async (quizId: string) => {
+// ── Get Single Quiz ───────────────────────────────────────
+export const getQuizByIdService = async (
+  userId: Types.ObjectId,
+  quizId: string,
+) => {
   if (!Types.ObjectId.isValid(quizId))
     throw new CustomError(400, "Invalid quiz id");
 
-  const quiz = await QuizModel.findById(quizId)
+  const quiz = await QuizModel.findOne({ _id: quizId, user: userId })
     .populate("category", "name slug")
-    .populate("questions.wordRef", "word description");
+    .populate("questions")
+    .populate("attempt");
 
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি");
+  if (!quiz) throw new CustomError(404, "Quiz not found");
   return quiz;
 };
 
-// ── Update Quiz ───────────────────────────────────────────
-export const updateQuizService = async (quizId: string, payload: any) => {
-  if (!Types.ObjectId.isValid(quizId))
-    throw new CustomError(400, "Invalid quiz id");
-
-  // category update করলে exist check
-  if (payload.category) {
-    const category = await CategoryWordModel.findById(payload.category);
-    if (!category) throw new CustomError(404, "Category পাওয়া যায়নি");
-  }
-
-  // questions update করলে validate
-  if (payload.questions) {
-    for (const q of payload.questions) {
-      const uniqueOptions = new Set(q.options);
-      if (uniqueOptions.size !== q.options.length) {
-        throw new CustomError(
-          400,
-          `"${q.questionText}" — duplicate options দেওয়া যাবে না`,
-        );
-      }
-
-      if (!q.options.includes(q.correctAnswer)) {
-        throw new CustomError(
-          400,
-          `"${q.questionText}" — correctAnswer অবশ্যই options এর মধ্যে একটা হতে হবে`,
-        );
-      }
-
-      if (q.wordRef) {
-        const word = await WordmanagementModel.findById(q.wordRef);
-        if (!word)
-          throw new CustomError(404, `wordRef "${q.wordRef}" পাওয়া যায়নি`);
-      }
-    }
-  }
-
-  const quiz = await QuizModel.findByIdAndUpdate(quizId, payload, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি");
-  return quiz;
-};
-
-// ── Delete Quiz ───────────────────────────────────────────
-export const deleteQuizService = async (quizId: string) => {
-  if (!Types.ObjectId.isValid(quizId))
-    throw new CustomError(400, "Invalid quiz id");
-
-  const quiz = await QuizModel.findByIdAndDelete(quizId);
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি");
-  return quiz;
-};
-
-// ── Toggle Active Status ──────────────────────────────────
-export const toggleQuizStatusService = async (quizId: string) => {
-  if (!Types.ObjectId.isValid(quizId))
-    throw new CustomError(400, "Invalid quiz id");
-
-  const quiz = await QuizModel.findById(quizId);
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি");
-
-  quiz.isActive = !quiz.isActive;
-  await quiz.save();
-  return quiz;
+// ── Admin: Get All Quizzes ────────────────────────────────
+export const getAllQuizzesAdminService = async () => {
+  return await QuizModel.find()
+    .populate("user", "name email")
+    .populate("category", "name slug")
+    .populate("attempt")
+    .sort({ createdAt: -1 });
 };

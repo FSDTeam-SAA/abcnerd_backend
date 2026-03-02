@@ -9,4 +9,5 @@ export interface ILearning {
   learningCategory: string; // enum string
   isActive: boolean; // একটাই active session থাকবে
   wordType: WordType;
+  swipeCount: number;
 }

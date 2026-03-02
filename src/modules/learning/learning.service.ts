@@ -4,10 +4,11 @@ import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { Progress } from "../progress/progress.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
+import { userModel } from "../usersAuth/user.models";
 
 export const createLearningSessionService = async (
   userId: Types.ObjectId,
-  category: string,
+  category: Types.ObjectId,
   dailyGoal: number,
   wordType: string,
 ) => {
@@ -16,10 +17,14 @@ export const createLearningSessionService = async (
     { isActive: false },
   );
 
+  const categoryDoc = await CategoryWordModel.findById(category).select("name");
+  console.log("categoryDoc", categoryDoc);
+  if (!categoryDoc) throw new CustomError(404, "Catergory not found");
+
   const session = await Learning.create({
     user: userId,
     dailyGoal,
-    learningCategory: category,
+    learningCategory: categoryDoc.name,
     isActive: true,
     wordType: wordType,
   });
@@ -60,6 +65,17 @@ export const wordActionService = async (
   const oppositeField = action === "memorized" ? "reviewLater" : "memorized";
   const userProgress = await Progress.findOne({ user: userId });
 
+  const user = await userModel
+    .findById({
+      _id: userId,
+      balance: {
+        wordSwipe: { $gt: 0 },
+      },
+    })
+    .select("email balance");
+  if (user?.balance?.wordSwipe === 0)
+    throw new CustomError(400, "your limit is over");
+
   if (
     (userProgress?.memorized?.includes(new Types.ObjectId(wordId)) &&
       action === "memorized") ||
@@ -85,12 +101,55 @@ export const wordActionService = async (
     { new: true, upsert: true },
   );
 
+  // ✅ Deduct balance for BOTH actions
+  user!.balance.wordSwipe = user!.balance.wordSwipe - 1;
+  await user!.save();
+
+  // ── Daily Stat Update (memorized + reviewLater উভয়ের জন্য) ──
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // active session থেকে dailyGoal নাও
+  const session = await Learning.findOne({ user: userId, isActive: true });
+  const dailyGoal = session?.dailyGoal || 0;
+
+  // আজকের stat আগে থেকে আছে কিনা check
+  const existingStat = userProgress?.dailyStat;
+  const isSameDay =
+    existingStat?.date &&
+    new Date(existingStat.date).setHours(0, 0, 0, 0) === today.getTime();
+
+  // আজকের stat থাকলে সেটার উপর add করো, না থাকলে fresh start
+  const prevMemorizedCount = isSameDay ? existingStat?.memorizedCount || 0 : 0;
+  const prevReviewLaterCount = isSameDay
+    ? existingStat?.reviewLaterCount || 0
+    : 0;
+
+  const newMemorizedCount =
+    action === "memorized" ? prevMemorizedCount + 1 : prevMemorizedCount;
+  const newReviewLaterCount =
+    action === "reviewLater" ? prevReviewLaterCount + 1 : prevReviewLaterCount;
+  const newSwipedCount = newMemorizedCount + newReviewLaterCount;
+
+  await Progress.findOneAndUpdate(
+    { user: userId },
+    {
+      $set: {
+        dailyStat: {
+          date: today,
+          swipedCount: newSwipedCount,
+          memorizedCount: newMemorizedCount,
+          reviewLaterCount: newReviewLaterCount,
+          remainingGoal: Math.max(0, dailyGoal - newSwipedCount),
+        },
+      },
+    },
+  );
+
+  // ── Video + Score + Streak (শুধু memorized এর জন্য) ──
   if (action !== "memorized") {
     return { progress, shouldShowVideo: false };
   }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const lastAction = progress.lastActionDate
     ? new Date(progress.lastActionDate)

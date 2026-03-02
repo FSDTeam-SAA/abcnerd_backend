@@ -1,21 +1,15 @@
-import { Document, Types } from "mongoose";
+import { Types } from "mongoose";
 
-// IQuestion কে Document থেকে extend করতে হবে যাতে mongoose-এর internal methods পাওয়া যায়
-export interface IQuestion extends Document {
-  _id: Types.ObjectId;
-  questionText: string;
-  options: string[];
-  correctAnswer: string;
-  wordRef?: Types.ObjectId; // any এর বদলে Types.ObjectId দেওয়া ভালো
-}
+export type QuizStatus = "ongoing" | "completed" | "abandoned";
 
-export interface IQuiz extends Document {
+export interface IQuiz {
   _id: Types.ObjectId;
-  title: string;
-  description?: string;
+  user: Types.ObjectId;
   category: Types.ObjectId;
-  questions: IQuestion[];
-  isActive: boolean;
+  questions: Types.ObjectId[]; // Question ref গুলো
+  status: QuizStatus;
+  totalQuestions: number;
+  attempt?: Types.ObjectId; // QuizAttempt ref — submit হলে add হবে
   createdAt?: Date;
   updatedAt?: Date;
 }

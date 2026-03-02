@@ -1,6 +1,7 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { ILearning } from "./learning.interface";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
+import { string } from "zod";
 
 const learningSchema = new Schema<ILearning>(
   {
@@ -29,6 +30,10 @@ const learningSchema = new Schema<ILearning>(
       enum: Object.values(WordType),
       default: WordType.ENTIRE,
       required: true,
+    },
+    swipeCount: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true },

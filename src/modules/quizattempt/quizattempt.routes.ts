@@ -1,24 +1,19 @@
 import { Router } from "express";
-
 import { authGuard } from "../../middleware/auth.middleware";
+import { validateRequest } from "../../middleware/validateRequest.middleware";
+import { submitQuizValidation } from "./quizattempt.validation";
 import {
-  getActiveQuizzes,
   getAllAttemptsAdmin,
   getAttemptById,
   getAttemptHistory,
   getAttemptsByQuizAdmin,
-  startQuiz,
   submitQuiz,
 } from "./quizattempt.controller";
 import { permission } from "../../middleware/permission.middleware";
-import { validateRequest } from "../../middleware/validateRequest.middleware";
-import { submitQuizValidation } from "./quizattempt.validation";
 
 const router = Router();
 
-// ── User ──
-router.get("/", authGuard, getActiveQuizzes);
-router.get("/start/:quizId", authGuard, startQuiz);
+// User
 router.post(
   "/submit/:quizId",
   authGuard,
@@ -28,7 +23,7 @@ router.post(
 router.get("/history", authGuard, getAttemptHistory);
 router.get("/history/:attemptId", authGuard, getAttemptById);
 
-// ── Admin ──
+// Admin
 router.get("/admin/all", authGuard, permission(["admin"]), getAllAttemptsAdmin);
 router.get(
   "/admin/quiz/:quizId",
