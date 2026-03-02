@@ -32,18 +32,18 @@ export const userService = {
       role: role,
     });
 
-    if (role === "user") {
-      const otp = generateOTP();
-      await mailer({
-        email: user.email,
-        subject: "Account verification OTP",
-        template: accountVerificationOtpEmailTemplate(user.name, otp),
-      });
-      user.verificationOtp = otp;
-      //*** Delete user from database after 2 minutes if not verified ***
-      user.verificationOtpExpire = new Date(Date.now() + 2 * 60 * 1000);
-      await user.save();
-    }
+    // if (role === "user") {
+    //   const otp = generateOTP();
+    //   await mailer({
+    //     email: user.email,
+    //     subject: "Account verification OTP",
+    //     template: accountVerificationOtpEmailTemplate(user.name, otp),
+    //   });
+    //   user.verificationOtp = otp;
+    //   //*** Delete user from database after 2 minutes if not verified ***
+    //   user.verificationOtpExpire = new Date(Date.now() + 2 * 60 * 1000);
+    //   await user.save();
+    // }
     return user;
   },
 
@@ -68,7 +68,7 @@ export const userService = {
     if (!user) throw new CustomError(400, "user not found");
 
     //check account status
-    if (!user.isVerified) throw new CustomError(400, "Account not verified");
+    // if (!user.isVerified) throw new CustomError(400, "Account not verified");
 
 
     const isPasswordMatch = await bcryptjs.compare(password, user.password);

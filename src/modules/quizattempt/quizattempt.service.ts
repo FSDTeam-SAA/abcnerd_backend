@@ -2,52 +2,12 @@ import { Types } from "mongoose";
 
 import CustomError from "../../helpers/CustomError";
 import { QuizModel } from "../quiz/quiz.models";
+import { QuestionModel } from "../question/question.models";
 import { QuizAttemptModel } from "./quizattempt.models";
+import { Progress } from "../progress/progress.models";
 import { NotebookModel } from "../notebook/notebook.models";
-import { IAnsweredQuestion } from "./quizattempt.interface";
 
-// ── User: Active Quizzes দেখা ─────────────────────────────
-export const getActiveQuizzesService = async () => {
-  const quizzes = await QuizModel.find({ isActive: true })
-    .populate("category", "name slug")
-    .select("-questions.correctAnswer")
-    .sort({ createdAt: -1 });
-
-  if (!quizzes.length) throw new CustomError(404, "কোনো quiz পাওয়া যায়নি");
-  return quizzes;
-};
-
-// ── User: Quiz Start ──────────────────────────────────────
-export const startQuizService = async (quizId: string) => {
-  if (!Types.ObjectId.isValid(quizId))
-    throw new CustomError(400, "Invalid quiz id");
-
-  const quiz = await QuizModel.findOne({ _id: quizId, isActive: true })
-    .populate("category", "name slug")
-    .populate("questions.wordRef", "word");
-
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি বা inactive");
-
-  // correctAnswer বাদ দিয়ে পাঠাও
-  const safeQuestions = quiz.questions.map((q: any) => ({
-    _id: q._id,
-    questionText: q.questionText,
-    options: q.options,
-    wordRef: q.wordRef,
-  }));
-
-  return {
-    _id: quiz._id,
-    title: quiz.title,
-    description: quiz.description,
-    category: quiz.category,
-    totalQuestions: quiz.questions.length,
-    timePerQuestion: 60, // seconds
-    questions: safeQuestions,
-  };
-};
-
-// ── User: Quiz Submit ─────────────────────────────────────
+// ── Submit Quiz ───────────────────────────────────────────
 export const submitQuizService = async (
   userId: Types.ObjectId,
   quizId: string,
@@ -56,35 +16,46 @@ export const submitQuizService = async (
   if (!Types.ObjectId.isValid(quizId))
     throw new CustomError(400, "Invalid quiz id");
 
-  const quiz = await QuizModel.findById(quizId);
-  if (!quiz) throw new CustomError(404, "Quiz পাওয়া যায়নি");
+  // quiz exist + user match check
+  const quiz = await QuizModel.findOne({ _id: quizId, user: userId });
+  if (!quiz) throw new CustomError(404, "Quiz not found");
+
+  if (quiz.status === "completed")
+    throw new CustomError(400, "This quiz has already been submitted");
 
   if (!answers || answers.length === 0)
-    throw new CustomError(400, "কমপক্ষে ১টা answer দাও");
+    throw new CustomError(400, "Please provide at least one answer");
 
   let score = 0;
   const answeredQuestions = [];
   const wrongAnswers = [];
+  const newAttemptedIds: Types.ObjectId[] = [];
 
   for (const answer of answers) {
-    const question = quiz.questions.find(
-      (q: any) => q._id.toString() === answer.questionId,
-    );
+    if (!Types.ObjectId.isValid(answer.questionId))
+      throw new CustomError(400, `Invalid questionId: ${answer.questionId}`);
 
+    const question = await QuestionModel.findById(answer.questionId);
     if (!question)
+      throw new CustomError(404, `Question not found: ${answer.questionId}`);
+
+    // এই question টা এই quiz এর অংশ কিনা check
+    if (!quiz.questions.map((q) => q.toString()).includes(answer.questionId))
       throw new CustomError(
         400,
-        `questionId "${answer.questionId}" এই quiz এ নেই`,
+        `Question ${answer.questionId} does not belong to this quiz`,
       );
 
     if (!question.options.includes(answer.selectedAnswer))
       throw new CustomError(
         400,
-        `"${answer.selectedAnswer}" এই question এর options এর মধ্যে নেই`,
+        `"${answer.selectedAnswer}" is not a valid option for this question`,
       );
 
     const isCorrect = question.correctAnswer === answer.selectedAnswer;
     if (isCorrect) score++;
+
+    newAttemptedIds.push(question._id);
 
     answeredQuestions.push({
       question: question._id,
@@ -96,7 +67,6 @@ export const submitQuizService = async (
       wordRef: question.wordRef,
     });
 
-    // wrong হলে notebook এর জন্য রাখো
     if (!isCorrect) {
       wrongAnswers.push({
         quiz: quiz._id,
@@ -111,18 +81,31 @@ export const submitQuizService = async (
     }
   }
 
-  const percentage = Math.round((score / quiz.questions.length) * 100);
+  const percentage = Math.round((score / answers.length) * 100);
 
-  // Attempt save
+  // QuizAttempt save
   const attempt = await QuizAttemptModel.create({
     user: userId,
     quiz: quiz._id,
-    answeredQuestions : answeredQuestions as IAnsweredQuestion[],
+    answeredQuestions,
     score,
-    totalQuestions: quiz.questions.length,
+    totalQuestions: answers.length,
     percentage,
     completedAt: new Date(),
   });
+
+  // Quiz status → completed + attempt ref add
+  await QuizModel.findByIdAndUpdate(quizId, {
+    status: "completed",
+    attempt: attempt._id,
+  });
+
+  // Progress এ attemptedQuestions update
+  await Progress.findOneAndUpdate(
+    { user: userId },
+    { $addToSet: { attemptedQuestions: { $each: newAttemptedIds } } },
+    { upsert: true },
+  );
 
   // Wrong answers notebook এ save
   if (wrongAnswers.length > 0) {
@@ -135,25 +118,26 @@ export const submitQuizService = async (
 
   return {
     attemptId: attempt._id,
+    quizId: quiz._id,
     score,
-    totalQuestions: quiz.questions.length,
+    totalQuestions: answers.length,
     percentage,
     result: answeredQuestions,
   };
 };
 
-// ── User: নিজের সব attempt history ───────────────────────
+// ── Get Attempt History ───────────────────────────────────
 export const getAttemptHistoryService = async (userId: Types.ObjectId) => {
   const attempts = await QuizAttemptModel.find({ user: userId })
-    .populate("quiz", "title description category")
-    .select("-answeredQuestions") // summary only
+    .populate("quiz", "category totalQuestions status")
+    .select("-answeredQuestions")
     .sort({ completedAt: -1 });
 
-  if (!attempts.length) throw new CustomError(404, "কোনো attempt history নেই");
+  if (!attempts.length) throw new CustomError(404, "No attempt history found");
   return attempts;
 };
 
-// ── User: একটা specific attempt এর details ───────────────
+// ── Get Single Attempt ────────────────────────────────────
 export const getAttemptByIdService = async (
   userId: Types.ObjectId,
   attemptId: string,
@@ -164,22 +148,24 @@ export const getAttemptByIdService = async (
   const attempt = await QuizAttemptModel.findOne({
     _id: attemptId,
     user: userId,
-  }).populate("quiz", "title description category");
+  })
+    .populate("quiz", "category totalQuestions")
+    .populate("answeredQuestions.wordRef", "word description synonyms");
 
-  if (!attempt) throw new CustomError(404, "Attempt পাওয়া যায়নি");
+  if (!attempt) throw new CustomError(404, "Attempt not found");
   return attempt;
 };
 
-// ── Admin: সব attempts ────────────────────────────────────
+// ── Admin: All Attempts ───────────────────────────────────
 export const getAllAttemptsAdminService = async () => {
   return await QuizAttemptModel.find()
     .populate("user", "name email")
-    .populate("quiz", "title")
+    .populate("quiz", "category totalQuestions")
     .select("-answeredQuestions")
     .sort({ completedAt: -1 });
 };
 
-// ── Admin: একটা quiz এর সব attempts ──────────────────────
+// ── Admin: Attempts By Quiz ───────────────────────────────
 export const getAttemptsByQuizAdminService = async (quizId: string) => {
   if (!Types.ObjectId.isValid(quizId))
     throw new CustomError(400, "Invalid quiz id");
@@ -190,7 +176,7 @@ export const getAttemptsByQuizAdminService = async (quizId: string) => {
     .sort({ completedAt: -1 });
 
   if (!attempts.length)
-    throw new CustomError(404, "এই quiz এ কোনো attempt নেই");
+    throw new CustomError(404, "No attempts found for this quiz");
 
   return attempts;
 };

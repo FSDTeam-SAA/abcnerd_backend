@@ -8,7 +8,7 @@ import { userService } from "./user.service";
 //TODO: Register user
 export const registration = asyncHandler(async (req, res) => {
   const user = await userService.registerUser(req.body);
-  ApiResponse.sendSuccess(res, 201, "User registered successfully, please check your email to activate your account within 2 minutes otherwise it will be deleted", {
+  ApiResponse.sendSuccess(res, 201, "User registered successfully", {
     email: user.email,
     name: user.name,
   });

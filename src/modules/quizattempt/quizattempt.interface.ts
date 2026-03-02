@@ -13,7 +13,7 @@ export interface IAnsweredQuestion {
 export interface IQuizAttempt {
   _id: Types.ObjectId;
   user: Types.ObjectId;
-  quiz: Types.ObjectId;
+  quiz: Types.ObjectId; // Quiz ref — নতুন
   answeredQuestions: IAnsweredQuestion[];
   score: number;
   totalQuestions: number;

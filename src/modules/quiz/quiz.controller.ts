@@ -1,62 +1,81 @@
-import { Request, Response } from "express";
-
+import { NextFunction, Request, Response } from "express";
 import {
-  createQuizService,
+  generateQuizService,
+  getUserQuizHistoryService,
+  getQuizByIdService,
   getAllQuizzesAdminService,
-  getQuizByIdAdminService,
-  updateQuizService,
-  deleteQuizService,
-  toggleQuizStatusService,
 } from "./quiz.service";
-import { asyncHandler } from "../../utils/asyncHandler";
-import ApiResponse from "../../utils/apiResponse";
+import { Types } from "mongoose";
 
-export const createQuiz = asyncHandler(async (req: Request, res: Response) => {
-  const quiz = await createQuizService(req.body);
+export const generateQuiz = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?._id;
+    const { categoryId, questionCount } = req.query;
 
-  ApiResponse.sendSuccess(res, 201, "Quiz created successfully", quiz);
-});
+    const quiz = await generateQuizService(
+      userId as Types.ObjectId,
+      categoryId as string,
+      questionCount ? Number(questionCount) : 10,
+    );
 
-export const getAllQuizzesAdmin = asyncHandler(
-  async (req: Request, res: Response) => {
-    const quizzes = await getAllQuizzesAdminService();
+    res.status(201).json({ success: true, data: quiz });
+  } catch (err) {
+    next(err as Error);
+  }
+};
 
-    ApiResponse.sendSuccess(res, 200, "All quizzes fetched successfully", {
+export const getUserQuizHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quizzes = await getUserQuizHistoryService(
+      req.user?._id as Types.ObjectId,
+    );
+    res.status(200).json({
+      success: true,
       total: quizzes.length,
       data: quizzes,
     });
-  },
-);
+  } catch (err) {
+    next(err as Error);
+  }
+};
 
-export const getQuizByIdAdmin = asyncHandler(
-  async (req: Request, res: Response) => {
-    const quiz = await getQuizByIdAdminService(req.params.id as string);
-
-    ApiResponse.sendSuccess(res, 200, "Quiz fetched successfully", quiz);
-  },
-);
-
-export const updateQuiz = asyncHandler(async (req: Request, res: Response) => {
-  const quiz = await updateQuizService(req.params.id as string, req.body);
-
-  ApiResponse.sendSuccess(res, 200, "Quiz updated successfully", quiz);
-});
-
-export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
-  await deleteQuizService(req.params.id as string);
-
-  ApiResponse.sendSuccess(res, 200, "Quiz deleted successfully", null);
-});
-
-export const toggleQuizStatus = asyncHandler(
-  async (req: Request, res: Response) => {
-    const quiz = await toggleQuizStatusService(req.params.id as string);
-
-    ApiResponse.sendSuccess(
-      res,
-      200,
-      `Quiz ${quiz.isActive ? "activated" : "deactivated"} successfully`,
-      quiz,
+export const getQuizById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quiz = await getQuizByIdService(
+      req.user?._id as Types.ObjectId,
+      req.params.quizId as string,
     );
-  },
-);
+    res.status(200).json({ success: true, data: quiz });
+  } catch (err) {
+    next(err as Error);
+  }
+};
+
+export const getAllQuizzesAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const quizzes = await getAllQuizzesAdminService();
+    res.status(200).json({
+      success: true,
+      total: quizzes.length,
+      data: quizzes,
+    });
+  } catch (err) {
+    next(err as Error);
+  }
+};

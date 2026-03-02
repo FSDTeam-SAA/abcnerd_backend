@@ -13,6 +13,8 @@ import quizattemptRoute from "../modules/quizattempt/quizattempt.routes";
 import { notificationRoute } from "../modules/notification/notification.routes";
 import { invoiceRoute } from "../modules/invoice/invoice.routes";
 import notebookRoute from "../modules/notebook/notebook.routes";
+import { chatbotRoute } from "../modules/chatbot/chatbot.routes";
+import questionRoute from "../modules/question/question.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -21,12 +23,14 @@ router.use("/learning", learningRoute);
 router.use("/progress", progressRoute);
 router.use("/notification", notificationRoute);
 router.use("/invoice", invoiceRoute);
+router.use("/chatbot", chatbotRoute);
 
 //!Only payment routes are below
 router.use("/subscriptionplan", subscriptionplanRoute);
 router.use("/payment", subscriptionRoute);
 router.use("/Quiz", quizRoute);
 router.use("/quiz-attempt", quizattemptRoute);
+router.use("/question", questionRoute);
 router.use("/notebook", notebookRoute);
 
 export default router;

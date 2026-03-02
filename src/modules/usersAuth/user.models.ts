@@ -24,7 +24,9 @@ const userSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: function (): boolean { return this.provider === "local" },
+      required: function (): boolean {
+        return this.provider === "local";
+      },
       select: false,
     },
     role: {
@@ -32,8 +34,7 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(role),
       default: role.USER,
     },
-    profileImage:
-    {
+    profileImage: {
       public_id: String,
       secure_url: String,
       _id: false,
@@ -66,12 +67,12 @@ const userSchema = new Schema<IUser>(
     balance: {
       wordSwipe: {
         type: Number,
-        default: 0,
+        default: 10,
         min: 0,
       },
       aiChat: {
         type: Number,
-        default: 0,
+        default: 5,
         min: 0,
       },
       validityDate: {
@@ -80,11 +81,10 @@ const userSchema = new Schema<IUser>(
       },
     },
 
-
     //! *** Delete user from database after 2 minutes if not verified ***
     verificationOtpExpire: {
       type: Date,
-      index: { expires: 0 },
+      // index: { expires: 0 },
     },
     refreshToken: {
       type: String,
@@ -102,12 +102,11 @@ const userSchema = new Schema<IUser>(
       tokenExpire: {
         type: Date,
       },
-
     },
     rememberMe: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -146,7 +145,6 @@ userSchema.methods.updatePassword = async function (
   currentPassword: string,
   newPassword: string,
 ): Promise<boolean> {
-
   //check current password is valid
   const isValid = await this.comparePassword(currentPassword);
   if (!isValid) {
@@ -172,7 +170,9 @@ userSchema.methods.createAccessToken = function () {
     { userId: this._id, email: this.email },
     config.jwt.accessTokenSecret as string,
     {
-      expiresIn: this.rememberMe ? config.jwt.accessTokenExpires as any : "1d",
+      expiresIn: this.rememberMe
+        ? (config.jwt.accessTokenExpires as any)
+        : "1d",
     },
   );
 };

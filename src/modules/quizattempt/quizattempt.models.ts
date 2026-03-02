@@ -1,9 +1,10 @@
 import { Schema, model } from "mongoose";
-import { IAnsweredQuestion, IQuizAttempt } from "./quizattempt.interface";
+import { IQuizAttempt } from "./quizattempt.interface";
 
-const answeredQuestionSchema = new Schema<IAnsweredQuestion>(
+
+const answeredQuestionSchema = new Schema<any>(
   {
-    question: { type: Schema.Types.ObjectId, required: true },
+    question: { type: Schema.Types.ObjectId, ref: "Question", required: true },
     questionText: { type: String, required: true },
     options: { type: [String], required: true },
     selectedAnswer: { type: String, required: true },

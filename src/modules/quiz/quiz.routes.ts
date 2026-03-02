@@ -1,38 +1,22 @@
 import { Router } from "express";
 import {
-  createQuiz,
+  generateQuiz,
+  getUserQuizHistory,
+  getQuizById,
   getAllQuizzesAdmin,
-  getQuizByIdAdmin,
-  updateQuiz,
-  deleteQuiz,
-  toggleQuizStatus,
 } from "./quiz.controller";
 import { authGuard } from "../../middleware/auth.middleware";
 import { permission } from "../../middleware/permission.middleware";
 
 const router = Router();
 
-router.post("/create-quiz", authGuard, permission(["admin"]), createQuiz);
-router.get(
-  "/get-all-quiz",
-  authGuard,
-  permission(["admin"]),
-  getAllQuizzesAdmin,
-);
-router.get(
-  "/get-single-quiz/:id",
-  authGuard,
-  permission(["admin"]),
-  getQuizByIdAdmin,
-);
-router.patch("/update-quiz/:id", authGuard, permission(["admin"]), updateQuiz);
-router.delete("/delete-quiz/:id", authGuard, permission(["admin"]), deleteQuiz);
-router.patch(
-  "/:id/toggle-status",
-  authGuard,
-  permission(["admin"]),
-  toggleQuizStatus,
-);
+// User
+router.post("/generate", authGuard, generateQuiz);
+router.get("/history", authGuard, getUserQuizHistory);
+router.get("/:quizId", authGuard, getQuizById);
+
+// Admin
+router.get("/admin/all", authGuard, permission(["admin"]), getAllQuizzesAdmin);
 
 const quizRoute = router;
 export default quizRoute;

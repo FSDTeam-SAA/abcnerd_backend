@@ -5,10 +5,10 @@ export const submitQuizValidation = z.object({
     answers: z
       .array(
         z.object({
-          questionId: z.string({ message: "questionId দাও" }),
-          selectedAnswer: z.string({ message: "selectedAnswer দাও" }),
+          questionId: z.string({ message: "questionId is required" }),
+          selectedAnswer: z.string({ message: "selectedAnswer is required" }),
         }),
       )
-      .min(1, "কমপক্ষে ১টা answer দাও"),
+      .min(1, "At least one answer is required"),
   }),
 });

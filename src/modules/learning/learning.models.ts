@@ -1,6 +1,7 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { ILearning } from "./learning.interface";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
+import { string } from "zod";
 
 const learningSchema = new Schema<ILearning>(
   {

@@ -18,7 +18,7 @@ export const createLearningSession = asyncHandler(
 
     const session = await createLearningSessionService(
       userId as Types.ObjectId,
-      learningCategory as string,
+      learningCategory as Types.ObjectId,
       dailyGoal,
       wordType as string,
     );
