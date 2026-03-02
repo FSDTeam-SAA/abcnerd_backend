@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
-import { IUser, role, status } from "./user.interface";
+import { IUser, role, status, SubscriptionPlan, SubscriptionStatus } from "./user.interface";
 
 const userSchema = new Schema<IUser>(
   {
@@ -77,6 +77,36 @@ const userSchema = new Schema<IUser>(
       validityDate: {
         type: Date,
         default: null,
+      },
+    },
+
+    // subscription block
+    subscription: {
+      subscriptionId: {
+        type: String,
+        default: null,
+      },
+      plan: {
+        type: String,
+        enum: Object.values(SubscriptionPlan),
+        default: null,
+      },
+      status: {
+        type: String,
+        enum: Object.values(SubscriptionStatus),
+        default: null,
+      },
+      startDate: {
+        type: Date,
+        default: null,
+      },
+      endDate: {
+        type: Date,
+        default: null,
+      },
+      lastResetDate: {
+        type: Date,
+        default: null,  // cron checks this to avoid double-reset on same day
       },
     },
 

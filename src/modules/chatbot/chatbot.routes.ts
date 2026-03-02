@@ -1,100 +1,36 @@
+// chatbot.route.ts
 import express from "express";
+import { validateRequest } from "../../middleware/validateRequest.middleware";
 import {
-    createChatbot,
-    getAllChatbots,
-    getChatbotById,
-    getChatbotBySlug,
-    updateChatbot,
-    deleteChatbot,
-    toggleStatus,
     chat,
     chatWithHistory,
-    chatWithBot,
-    generateDescription,
+    getHistory,
+    getHistoryByDay,
+    deleteHistoryByDay,
 } from "./chatbot.controller";
-import {
-    createChatbotSchema,
-    updateChatbotSchema,
-    chatbotQuerySchema,
-    chatMessageSchema,
-    generateDescSchema,
-} from "./chatbot.validation";
-import { validateRequest } from "../../middleware/validateRequest.middleware";
-// import { authMiddleware } from "../../middleware/auth.middleware";
-// import { adminMiddleware } from "../../middleware/admin.middleware";
+import { chatMessageSchema } from "./chatbot.validation";
+import { authGuard } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 
-// ─────────────────────────────────────────
-// CRUD
-// ─────────────────────────────────────────
+// ─── Chat ─────────────────────────────────────────────────────────────────────
 
-router.post(
-    "/start-chat",
-    // authMiddleware, adminMiddleware,
-    validateRequest(createChatbotSchema),
-    createChatbot
-);
+// Context-unaware chat — sends the message without prior context. Persists both user and AI turns to the DB.
+router.post("/message",authGuard, validateRequest(chatMessageSchema), chat);
 
-router.get(
-    "/get-all",
-    validateRequest(chatbotQuerySchema),
-    getAllChatbots
-);
+// Context-aware chat — loads today's history as prior context
+// Body: { message: string, sessionId?: string }
+router.post("/message/history", authGuard, validateRequest(chatMessageSchema), chatWithHistory);
 
-router.get("/get-chat/slug/:slug", getChatbotBySlug);
+// ─── History ──────────────────────────────────────────────────────────────────
 
-router.get("/get-chat/:id", getChatbotById);
+// Get all daily chat docs for the current user/session (newest first)
+router.get("/history", authGuard, getHistory);
 
-router.patch(
-    "/update-chat/:id",
-    // authMiddleware, adminMiddleware,
-    validateRequest(updateChatbotSchema),
-    updateChatbot
-);
+// Get a single day's chat doc — dayKey format: YYYY-MM-DD
+router.get("/history/:dayKey", authGuard, getHistoryByDay);
 
-router.patch(
-    "/toggle-status/:id",
-    // authMiddleware, adminMiddleware,
-    toggleStatus
-);
-
-router.delete(
-    "/delete-chat/:id",
-    // authMiddleware, adminMiddleware,
-    deleteChatbot
-);
-
-// ─────────────────────────────────────────
-// GEMINI
-// ─────────────────────────────────────────
-
-router.post(
-    "/message",
-    // authMiddleware,
-    validateRequest(chatMessageSchema),
-    chat
-);
-
-router.post(
-    "/message/history",
-    // authMiddleware,
-    validateRequest(chatMessageSchema),
-    chatWithHistory
-);
-
-router.post(
-    "/message/:id",
-    // authMiddleware,
-    validateRequest(chatMessageSchema),
-    chatWithBot
-);
-
-router.post(
-    "/generate-description",
-    // authMiddleware, adminMiddleware,
-    validateRequest(generateDescSchema),
-    generateDescription
-);
+// Soft-delete a single day's chat doc — dayKey format: YYYY-MM-DD
+router.delete("/history/:dayKey", authGuard, deleteHistoryByDay);
 
 export const chatbotRoute = router;

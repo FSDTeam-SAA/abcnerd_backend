@@ -1,39 +1,25 @@
-export interface IChatbot {
-  _id: string;
-  title: string;
-  description?: string;
-  status?: "active" | "inactive";
-  isDeleted?: boolean;
-  slug?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+// chatbot.interface.ts
 
-export interface ICreateChatbot {
-  title: string;
-  description?: string;
-  status?: "active" | "inactive";
-}
+export type ChatRole = "user" | "model";
 
-export interface IUpdateChatbot {
-  title?: string;
-  description?: string;
-  status?: "active" | "inactive";
-}
-
-export interface IChatbotQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: "active" | "inactive";
+export interface IChatPart {
+  text: string;
 }
 
 export interface IChatMessage {
-  message: string;
-  history?: IChatHistory[];
+  role: ChatRole;
+  parts: IChatPart[];
 }
 
-export interface IChatHistory {
-  role: "user" | "model";
-  parts: { text: string }[];
+export type ChatHistory = IChatMessage[];
+
+// Options passed from controller → service to identify who is chatting
+export interface IChatIdentity {
+  userId?: string;
+  sessionId?: string;
+}
+
+// Shape returned by both chat endpoints
+export interface IChatResponse {
+  response: string;
 }
