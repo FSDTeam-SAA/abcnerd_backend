@@ -7,7 +7,7 @@ import { authGuard } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 
-//TODO: customize as needed
+//: customize as needed
 
 //router.post("/create-invoice", uploadSingle("image"), validateRequest(createInvoiceSchema), createInvoice);
 router.get("/get-single-invoice/:invoiceId", authGuard, getSingleInvoice);

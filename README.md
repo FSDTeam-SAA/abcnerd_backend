@@ -1,3 +1,133 @@
+**Project Overview**
+- **Name:** ABCNerd backend
+- **Purpose:** REST API backend for the ABCNerd learning app (users, word management, quizzes, subscriptions, notifications, etc.).
+
+**Prerequisites**
+- Node.js (v18+ recommended)
+- npm (v9+ recommended)
+- MongoDB (Atlas or local)
+- Redis (optional, for rate-limiting/session)
+
+**Quick Setup**
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create an environment file from the example:
+
+```bash
+cp .env.example .env
+# then edit .env to add real values
+```
+
+3. Run the app in development:
+
+```bash
+npm run dev
+```
+
+4. Build for production:
+
+```bash
+npm run build
+npm run start
+```
+
+**Repository layout (important parts)**
+- `src/` – source code (controllers, services, models, routes, utils)
+- `src/modules/` – feature modules (usersAuth, wordmanagement, quiz, etc.)
+- `src/config/` – runtime configuration
+- `src/database/` – database connection and cron jobs
+- `scripts/` – helper scripts (seeders, module scaffolding)
+
+**Environment variables**
+See `.env.example` for all required keys. Do not commit real keys.
+
+**Database schema explanation**
+This section summarizes the primary collections and main fields. It is a compact reference (not full Mongoose schema details):
+
+- **Users**
+  - Key fields: `email`, `name`, `password` (hashed), `role` (`user|admin`), `provider` (`local|google|kakao|apple`), `refreshToken`, `isVerified`, `status`
+  - Relationships: users own progress, quizzes, invoices and subscriptions.
+
+- **CategoryWord**
+  - Key fields: `name`, `description`, `status`.
+  - Purpose: grouping for words (e.g., topic, level).
+
+- **Wordmanagement**
+  - Key fields: `word`, `description`, `examples` (array), `synonyms`, `partOfSpeech`, `tags`, `frequency`, `categoryWordId` (ref)
+  - Purpose: main dictionary entries used by quizzes and learning flows.
+
+- **Quiz & QuizAttempt**
+  - `Quiz` contains metadata and question list; `QuizAttempt` stores user answers, score and progress.
+
+- **SubscriptionPlan & Subscription**
+  - Plans define pricing durations/features; Subscription stores user's active plan, status, renewal dates.
+
+- **Notification / Invoice / Notebook / Progress**
+  - Support collections for messaging, billing, user notes and learning progress.
+
+Notes:
+- Most models include common auditing fields: `createdAt`, `updatedAt`, `isDeleted`, `deletedAt`.
+- Sensitive fields (password, refreshToken, password reset tokens) are excluded by projection in responses — see `user.service` methods.
+
+**Requirements → Implementation mapping**
+
+- Requirement: User registration, verification, login, social login, password reset
+  - Implemented in: `src/modules/usersAuth/*` (`user.controller.ts`, `user.service.ts`, `user.models.ts`)
+  - Notes: JWT tokens, refresh token handling, cookies and social providers (Google, Kakao, Apple) are supported.
+
+- Requirement: Word storage and management with filtering, search, categories
+  - Implemented in: `src/modules/wordmanagement/*` and `src/modules/categoryword/*`
+  - Notes: Endpoints include pagination, search, status filter and create/update/delete flows.
+
+- Requirement: Quizzes, attempts and scoring
+  - Implemented in: `src/modules/quiz*` and `src/modules/quizattempt*`
+
+- Requirement: Subscriptions and payments
+  - Implemented in: `src/modules/subscription*` and `src/lib/stripe.ts`
+
+- Requirement: Notifications, invoices and notebook
+  - Implemented in respective modules under `src/modules/`
+
+**Important implementation notes & recommendations**
+- Types: Many places currently use `any`. Recommended fixes: add `RequestWithUser` types, strongly type service return values, and replace `any` in `apiResponse`/`asyncHandler`.
+- Security: centralise cookie options in config and ensure `secure`/`httpOnly` are set appropriately for production.
+- Tests: add unit tests for auth flows and pagination; add CI (GitHub Actions) to run `npm run build` and tests.
+
+**How to export a ZIP of the backend**
+
+From the repository root run:
+
+```bash
+zip -r abcnerd-backend.zip . -x node_modules/**\* dist/**\* .git/**\* .env
+```
+
+Or on Windows (PowerShell):
+
+```powershell
+Compress-Archive -Path * -DestinationPath ..\abcnerd-backend.zip -Force
+```
+
+**Files included in the ZIP**
+- All files under `src/`, `package.json`, `tsconfig.json`, `scripts/`, and the generated `README.md` and `.env.example`.
+
+**Where to look first in the code**
+- Authentication: src/modules/usersAuth/user.service.ts
+- API error and response shape: src/utils/apiResponse.ts and src/helpers/CustomError.ts
+- Word management and validation: src/modules/wordmanagement/wordmanagement.service.ts and src/modules/wordmanagement/wordmanagement.validation.ts
+
+**Contact / Next steps**
+- If you want, I can:
+  - generate the ZIP for you, or
+  - perform the `any` → typed refactor for the user module first, or
+  - add a simple GitHub Actions CI that runs `npm run build`.
+
+---
+Generated on: 2026-03-03
 # Boilerplate Web Node.js TypeScript
 
 A robust and scalable Node.js backend boilerplate built with TypeScript, Express, and MongoDB. This project provides a solid foundation for building web applications with authentication, file uploads, real-time features, and more.

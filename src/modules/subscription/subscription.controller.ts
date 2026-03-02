@@ -33,7 +33,7 @@ export const createSubscriptionCheckout = asyncHandler(
 );
 
 
-//TODO: success payment
+//: success payment
 
 export const successPayment = asyncHandler(async (req: Request, res: Response) => {
   const session_id = String(req.query.session_id || "").trim();
@@ -45,7 +45,7 @@ export const successPayment = asyncHandler(async (req: Request, res: Response) =
   ApiResponse.sendSuccess(res, 200, "Payment success", result);
 });
 
-//TODO: payment failed
+//: payment failed
 export const failedPayment = asyncHandler(async (req: Request, res: Response) => {
   const session_id = String(req.query.session_id || "").trim();
   if (!session_id) {
@@ -57,7 +57,7 @@ export const failedPayment = asyncHandler(async (req: Request, res: Response) =>
 });
 
 
-//!TODO: create payment intent for own checkout page
+//!: create payment intent for own checkout page
 
 export const createPaymentIntent = asyncHandler(async (req: any, res: Response) => {
   const { planId } = req.body as { planId: string };
@@ -83,7 +83,7 @@ export const createPaymentIntent = asyncHandler(async (req: any, res: Response) 
 });
 
 
-//TODO: implement webhook handler to listen Stripe events and update subscription status accordingly (e.g. handle cases where user does not return to success page, or payment fails after checkout)
+//: implement webhook handler to listen Stripe events and update subscription status accordingly (e.g. handle cases where user does not return to success page, or payment fails after checkout)
 // This is important to ensure subscription status is accurate even if user does not return to success page after checkout, or if payment fails after checkout (e.g. due to insufficient funds, card issues, etc.) - we can listen for events like 'checkout.session.completed', 'invoice.payment_succeeded', 'invoice.payment_failed', etc. from Stripe and update our subscription records accordingly to reflect the true status of the subscription and avoid issues with users having access when they shouldn't or losing access when they should have it.      
 export const StripeWebhook = asyncHandler(async (req: Request, res: Response) => {
   const result = await subscriptionService.handleStripeWebhook(req);

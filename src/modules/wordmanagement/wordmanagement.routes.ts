@@ -8,7 +8,7 @@ import { permission } from "../../middleware/permission.middleware";
 
 const router = express.Router();
 
-//TODO: customize as needed
+//: customize as needed
 
 //router.post("/create-wordmanagement", uploadSingle("image"), validateRequest(createWordmanagementSchema), createWordmanagement);
 router.post("/create-wordmanagement", authGuard, permission(["admin"]), validateRequest(createWordmanagementSchema), createWordmanagement);

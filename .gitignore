@@ -154,4 +154,7 @@ $RECYCLE.BIN/
 # Local History for Visual Studio Code
 .history/
 
+#ignore zip
+abcnerd-backend.zip
+
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node,Windows,VisualStudioCode
