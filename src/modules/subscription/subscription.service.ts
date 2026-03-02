@@ -17,7 +17,52 @@ type CreateCheckoutPayload = {
   stripeCustomerId?: string | null;
 };
 
-//TODO: Create checkout session (called from controller)
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper: build the $set payload that updates both balance and subscription
+// fields on the user document after a successful payment.
+//
+// Maps to userSchema fields:
+//   balance      → { wordSwipe, aiChat, validityDate }
+//   subscription → { subscriptionId, plan, status, startDate, endDate, lastResetDate }
+// ─────────────────────────────────────────────────────────────────────────────
+function buildUserActivationUpdate(
+  planDoc: any,
+  currentBalance: { wordSwipe?: number; aiChat?: number } | undefined,
+  periodStart: Date,
+  periodEnd: Date,
+  subscriptionDocId: any
+) {
+  const set: Record<string, any> = {
+    // ── subscription block (matches userSchema exactly) ──────────────────────
+    "subscription.subscriptionId": String(subscriptionDocId || null),
+    "subscription.plan":               planDoc?.title || null,
+    "subscription.status":             "active",
+    "subscription.startDate":          periodStart,
+    "subscription.endDate":            periodEnd,
+    "subscription.lastResetDate":      new Date(),
+
+    // ── balance block ────────────────────────────────────────────────────────
+    // validityDate mirrors periodEnd so the cron knows when credits expire
+    "balance.validityDate": periodEnd,
+  };
+
+  // Only update credit counts if the plan actually grants them
+  if (planDoc?.credits?.wordSwipe) {
+    set["balance.wordSwipe"] =
+      (currentBalance?.wordSwipe || 0) + (planDoc.credits.wordSwipe || 0);
+  }
+  if (planDoc?.credits?.aiChat) {
+    set["balance.aiChat"] =
+      (currentBalance?.aiChat || 0) + (planDoc.credits.aiChat || 0);
+  }
+
+  return { $set: set };
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Create checkout session (called from controller)
+// ─────────────────────────────────────────────────────────────────────────────
 export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
   const { userId, planId, userEmail, stripeCustomerId } = payload;
 
@@ -58,7 +103,10 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
     throw new CustomError(400, "Plan price is invalid");
   }
 
-  const user = await userModel.findById(userId).select("name address email").lean();
+  const user = await userModel
+    .findById(userId)
+    .select("name address email")
+    .lean();
   if (!user) throw new CustomError(404, "User not found");
 
   const currency = String(plan.currency || "KRW").trim().toLowerCase();
@@ -67,7 +115,6 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
   }
 
   const customerName = (user?.name || "").trim() || "Customer";
-
   let customerId = (stripeCustomerId || "").trim();
 
   if (!customerId) {
@@ -136,10 +183,10 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
     cancel_url: `${config.frontendUrl}/payment/cancel`,
 
     metadata: {
-      userId: String(userId),
+      userId:            String(userId),
       subscriptionDocId: String(sub._id),
-      planId: String(plan._id),
-      type: "plan_payment",
+      planId:            String(plan._id),
+      type:              "plan_payment",
     },
   });
 
@@ -147,16 +194,18 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
   await sub.save();
 
   return {
-    checkoutUrl: session.url,
-    sessionId: session.id,
-    subscriptionId: sub._id,
+    checkoutUrl:      session.url,
+    sessionId:        session.id,
+    subscriptionId:   sub._id,
     stripeCustomerId: customerId,
-    amount: plan.price,
-    currency: currency.toUpperCase(),
+    amount:           plan.price,
+    currency:         currency.toUpperCase(),
   };
 };
 
-//TODO: success payment (called from controller after redirect from Stripe Checkout)
+// ─────────────────────────────────────────────────────────────────────────────
+// Success payment (called from controller after redirect from Stripe Checkout)
+// ─────────────────────────────────────────────────────────────────────────────
 export const successPayment = async (sessionId: string) => {
   if (!sessionId) {
     throw new CustomError(400, "session_id is required");
@@ -195,23 +244,24 @@ export const successPayment = async (sessionId: string) => {
       message: "Subscription already active",
       subscriptionId: subscription._id,
       stripe: {
-        sessionId: session.id,
+        sessionId:     session.id,
         paymentStatus: session.payment_status,
-        amountTotal: session.amount_total,
-        currency: session.currency?.toUpperCase(),
-        customerName: session.customer_details?.name,
+        amountTotal:   session.amount_total,
+        currency:      session.currency?.toUpperCase(),
+        customerName:  session.customer_details?.name,
         customerEmail: session.customer_details?.email,
       },
       items: lineItems.data.map((li) => ({
         description: li.description,
-        quantity: li.quantity,
+        quantity:    li.quantity,
         amountTotal: li.amount_total,
-        currency: li.currency,
-        priceId: li.price?.id,
+        currency:    li.currency,
+        priceId:     li.price?.id,
       })),
     };
   }
 
+  // ── Activate subscription document ────────────────────────────────────────
   subscription.status = "active";
   subscription.currentPeriodStart = new Date();
 
@@ -223,7 +273,7 @@ export const successPayment = async (sessionId: string) => {
   subscription.currentPeriodEnd =
     interval === "year"
       ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
 
   (subscription as any).stripePaymentStatus = session.payment_status;
   (subscription as any).stripeSessionStatus = session.status || null;
@@ -236,7 +286,6 @@ export const successPayment = async (sessionId: string) => {
   if (paymentIntentId) {
     (subscription as any).stripePaymentIntentId = paymentIntentId;
   }
-
   if (session.customer_details?.email) {
     (subscription as any).customerEmail = session.customer_details.email;
   }
@@ -246,60 +295,67 @@ export const successPayment = async (sessionId: string) => {
 
   await subscription.save();
 
-  // Update user balance / credits
-  const user = await userModel.findById(subscription.userId).select("email name balance").lean();
+  // ── Update user: balance + subscription block ──────────────────────────────
+  const user = await userModel
+    .findById(subscription.userId)
+    .select("email name balance")
+    .lean();
+
   if (user) {
-    const updates: Record<string, number> = {};
-    if ((subscription as any).planId?.credits?.wordSwipe) {
-      updates["balance.wordSwipe"] =
-        (user.balance?.wordSwipe || 0) + ((subscription as any).planId.credits.wordSwipe || 0);
-    }
-    if ((subscription as any).planId?.credits?.aiChat) {
-      updates["balance.aiChat"] =
-        (user.balance?.aiChat || 0) + ((subscription as any).planId.credits.aiChat || 0);
-    }
-    if (Object.keys(updates).length > 0) {
-      await userModel.findByIdAndUpdate(subscription.userId, { $set: updates });
-    }
+    await userModel.findByIdAndUpdate(
+      subscription.userId,
+      buildUserActivationUpdate(
+        (subscription as any).planId,
+        user.balance,
+        subscription.currentPeriodStart!,
+        subscription.currentPeriodEnd!,
+        subscription._id
+      )
+    );
   }
 
+  // ── Create invoice ─────────────────────────────────────────────────────────
   const invoice = await InvoiceModel.create({
-    title: `Invoice for ${(subscription as any).planId.title} Plan`,
-    description: `Subscription activated for ${user?.name || "Customer"} (${user?.email || "Unknown email"}) on ${new Date().toLocaleDateString()}`,
-    userId: subscription.userId,
-    email: user?.email || session.customer_details?.email || "Unknown email",
-    planName: (subscription as any).planId.title,
+    title:       `Invoice for ${(subscription as any).planId.title} Plan`,
+    description: `Subscription activated for ${user?.name || "Customer"} (${
+      user?.email || "Unknown email"
+    }) on ${new Date().toLocaleDateString()}`,
+    userId:    subscription.userId,
+    email:     user?.email || session.customer_details?.email || "Unknown email",
+    planName:  (subscription as any).planId.title,
     startDate: subscription.currentPeriodStart,
-    endDate: subscription.currentPeriodEnd,
-    status: "paid",
+    endDate:   subscription.currentPeriodEnd,
+    status:    "paid",
     isDeleted: false,
   });
 
-  // Save invoice reference back to subscription
   (subscription as any).latestInvoiceId = invoice._id;
   await subscription.save();
 
   return {
-    message: "Subscription activated successfully",
+    message:        "Subscription activated successfully",
     subscriptionId: subscription._id,
     stripe: {
-      sessionId: session.id,
+      sessionId:     session.id,
       paymentStatus: session.payment_status,
-      amountTotal: session.amount_total,
-      currency: session.currency?.toUpperCase(),
-      customerName: session.customer_details?.name,
+      amountTotal:   session.amount_total,
+      currency:      session.currency?.toUpperCase(),
+      customerName:  session.customer_details?.name,
       customerEmail: session.customer_details?.email,
     },
     items: lineItems.data.map((li) => ({
       description: li.description,
-      quantity: li.quantity,
+      quantity:    li.quantity,
       amountTotal: li.amount_total,
-      currency: li.currency,
-      priceId: li.price?.id,
+      currency:    li.currency,
+      priceId:     li.price?.id,
     })),
   };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Failed / cancelled payment (cancel URL redirect)
+// ─────────────────────────────────────────────────────────────────────────────
 export const failedPayment = async (sessionId: string) => {
   if (!sessionId) {
     throw new CustomError(400, "session_id is required");
@@ -315,14 +371,22 @@ export const failedPayment = async (sessionId: string) => {
     subscription.status = "canceled";
     subscription.cancelAtPeriodEnd = false;
     await subscription.save();
+
+    // Reflect canceled status on the user document
+    await userModel.findByIdAndUpdate(subscription.userId, {
+      $set: { "subscription.status": "canceled" },
+    });
   }
 
   return {
-    message: "Payment failed or was cancelled. Subscription not activated.",
+    message:   "Payment failed or was cancelled. Subscription not activated.",
     sessionId,
   };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Create Payment Intent (custom card element flow)
+// ─────────────────────────────────────────────────────────────────────────────
 export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   const { userId, planId, userEmail, stripeCustomerId } = payload;
 
@@ -345,7 +409,11 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   if (existingActive) {
     throw new CustomError(
       409,
-      `Already have an active subscription, ${(existingActive as any).planId?.title || "current Plan"} expires on ${new Date((existingActive as any).currentPeriodEnd || 0).toLocaleDateString()}`,
+      `Already have an active subscription, ${
+        (existingActive as any).planId?.title || "current Plan"
+      } expires on ${new Date(
+        (existingActive as any).currentPeriodEnd || 0
+      ).toLocaleDateString()}`
     );
   }
 
@@ -405,20 +473,20 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: plan.price,
+    amount:   plan.price,
     currency,
     customer: customerId,
     automatic_payment_methods: { enabled: true },
     receipt_email: userEmail,
     metadata: {
-      userId: String(userId),
-      planId: String(planId),
+      userId:         String(userId),
+      planId:         String(planId),
       subscriptionId: String(sub._id),
-      type: "plan_payment_intent",
+      type:           "plan_payment_intent",
     },
   });
 
-  // findByIdAndUpdate avoids race condition where Stripe fires webhook
+  // findByIdAndUpdate avoids a race condition where Stripe fires the webhook
   // before sub.save() completes
   await SubscriptionModel.findByIdAndUpdate(sub._id, {
     stripePaymentIntentId: paymentIntent.id,
@@ -426,11 +494,14 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
 
   return {
     paymentIntentId: paymentIntent.id,
-    clientSecret: paymentIntent.client_secret,
-    subscriptionId: sub._id,
+    clientSecret:    paymentIntent.client_secret,
+    subscriptionId:  sub._id,
   };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Webhook Handler
+// ─────────────────────────────────────────────────────────────────────────────
 export const handleStripeWebhook = async (req: any) => {
   const sig = req.headers["stripe-signature"];
   if (!sig) {
@@ -440,38 +511,48 @@ export const handleStripeWebhook = async (req: any) => {
   let event: any;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, config.stripe.webhookSecret);
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      config.stripe.webhookSecret
+    );
   } catch (err) {
-    throw new CustomError(400, `Webhook Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+    throw new CustomError(
+      400,
+      `Webhook Error: ${err instanceof Error ? err.message : "Unknown error"}`
+    );
   }
 
   switch (event.type) {
 
-    // ── Stripe Checkout flow ──────────────────────────────────────────────────
+    // ── Stripe Checkout flow ────────────────────────────────────────────────
     case "checkout.session.completed": {
       const session = event.data.object;
+
       if (session.payment_status === "paid") {
-        // FIX: await successPayment FIRST — only emit socket after DB is updated.
-        // Previously the emit fired before successPayment(), so the frontend could
-        // show success even if DB activation failed.
+        // Await successPayment FIRST — only emit socket after DB is updated.
+        // Previously the emit fired before successPayment(), so the frontend
+        // could show success even if DB activation failed.
         await successPayment(session.id);
 
         const io = getIo();
         io.to(String(session.metadata?.userId)).emit("payment:success", {
-          message: "Your subscription is now active!",
-          subscriptionId: session.metadata?.subscriptionDocId,
-          planId: session.metadata?.planId,
+          message:         "Your subscription is now active!",
+          subscriptionId:  session.metadata?.subscriptionDocId,
+          planId:          session.metadata?.planId,
           stripeSessionId: session.id,
-          amount: session.amount_total ? session.amount_total / 100 : 0,
+          amount:   session.amount_total ? session.amount_total / 100 : 0,
           currency: session.currency?.toUpperCase() || "KRW",
         });
 
-        console.log(`[Webhook] checkout.session.completed — notified userId: ${session.metadata?.userId}`);
+        console.log(
+          `[Webhook] checkout.session.completed — notified userId: ${session.metadata?.userId}`
+        );
       }
       break;
     }
 
-    // ── Custom card element flow (createPaymentIntent) ────────────────────────
+    // ── Custom card element flow (createPaymentIntent) ──────────────────────
     case "payment_intent.succeeded": {
       const pi = event.data.object;
 
@@ -479,7 +560,9 @@ export const handleStripeWebhook = async (req: any) => {
 
       const { subscriptionId, userId } = pi.metadata;
       if (!subscriptionId) {
-        console.warn(`[Webhook] payment_intent.succeeded — no subscriptionId in metadata for PI: ${pi.id}`);
+        console.warn(
+          `[Webhook] payment_intent.succeeded — no subscriptionId in metadata for PI: ${pi.id}`
+        );
         break;
       }
 
@@ -502,77 +585,84 @@ export const handleStripeWebhook = async (req: any) => {
         break;
       }
 
-      // Activate subscription
+      // ── Activate subscription document ─────────────────────────────────────
       sub.status = "active";
       sub.currentPeriodStart = new Date();
       sub.currentPeriodEnd =
         (sub as any).interval === "year"
           ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
       (sub as any).stripePaymentIntentId = pi.id;
       await sub.save();
 
-      // FIX: update user balance/credits — was missing, only successPayment() did this
-      const user = await userModel.findById(sub.userId).select("email name balance credits").lean();
+      // ── Update user: balance + subscription block ──────────────────────────
+      const user = await userModel
+        .findById(sub.userId)
+        .select("email name balance")
+        .lean();
+
       if (user) {
-        const updates: Record<string, number> = {};
-        if ((sub as any).planId?.credits?.wordSwipe) {
-          updates["balance.wordSwipe"] =
-            (user.balance?.wordSwipe || 0) + ((sub as any).planId.credits.wordSwipe || 0);
-        }
-        if ((sub as any).planId?.credits?.aiChat) {
-          updates["balance.aiChat"] =
-            (user.balance?.aiChat || 0) + ((sub as any).planId.credits.aiChat || 0);
-        }
-        if (Object.keys(updates).length > 0) {
-          await userModel.findByIdAndUpdate(sub.userId, { $set: updates });
-        }
+        await userModel.findByIdAndUpdate(
+          sub.userId,
+          buildUserActivationUpdate(
+            (sub as any).planId,
+            user.balance,
+            sub.currentPeriodStart!,
+            sub.currentPeriodEnd!,
+            sub._id
+          )
+        );
       }
 
-      // Create invoice
+      // ── Create invoice ─────────────────────────────────────────────────────
       const invoice = await InvoiceModel.create({
-        title: `Invoice for ${(sub as any).planId.title} Plan`,
-        description: `Subscription activated for ${user?.name || "Customer"} (${user?.email || "Unknown email"}) on ${new Date().toLocaleDateString()}`,
-        userId: sub.userId,
-        email: user?.email || pi.receipt_email || "Unknown email",
-        planName: (sub as any).planId.title,
+        title:       `Invoice for ${(sub as any).planId.title} Plan`,
+        description: `Subscription activated for ${
+          user?.name || "Customer"
+        } (${user?.email || "Unknown email"}) on ${new Date().toLocaleDateString()}`,
+        userId:    sub.userId,
+        email:     user?.email || pi.receipt_email || "Unknown email",
+        planName:  (sub as any).planId.title,
         startDate: sub.currentPeriodStart,
-        endDate: sub.currentPeriodEnd,
-        status: "paid",
+        endDate:   sub.currentPeriodEnd,
+        status:    "paid",
         isDeleted: false,
       });
 
-      // FIX: save latestInvoiceId back to subscription — was missing
       (sub as any).latestInvoiceId = invoice._id;
       await sub.save();
 
-      // FIX: emit socket — was completely missing for this flow
+      // ── Emit socket ────────────────────────────────────────────────────────
       const io = getIo();
       io.to(String(userId)).emit("payment:success", {
-        message: "Your subscription is now active!",
-        subscriptionId: sub._id,
-        planId: (sub as any).planId._id,
-        planName: (sub as any).planId.title,
-        amount: pi.amount_received / 100,
-        currency: pi.currency?.toUpperCase() || "KRW",
+        message:               "Your subscription is now active!",
+        subscriptionId:        sub._id,
+        planId:                (sub as any).planId._id,
+        planName:              (sub as any).planId.title,
+        amount:                pi.amount_received / 100,
+        currency:              pi.currency?.toUpperCase() || "KRW",
         stripePaymentIntentId: pi.id,
       });
 
+      // ── Create notification ────────────────────────────────────────────────
       const notification = await NotificationModel.create({
-        receiverId: String(userId),
-        title: "Subscription Activated",
-        description: `Your subscription is now active! Plan: ${(sub as any).planId.title || "N/A"}`,
-        type: "user",
+        receiverId:  String(userId),
+        title:       "Subscription Activated",
+        description: `Your subscription is now active! Plan: ${
+          (sub as any).planId.title || "N/A"
+        }`,
+        type:   "user",
         status: "unread",
       });
 
       console.log(notification);
-
-      console.log(`[Webhook] SUCCESS — subscription activated: ${sub._id}, notified userId: ${userId}`);
+      console.log(
+        `[Webhook] SUCCESS — subscription activated: ${sub._id}, notified userId: ${userId}`
+      );
       break;
     }
 
-    // ── Payment failed ────────────────────────────────────────────────────────
+    // ── Payment failed ──────────────────────────────────────────────────────
     case "payment_intent.payment_failed": {
       const pi = event.data.object;
 
@@ -581,20 +671,27 @@ export const handleStripeWebhook = async (req: any) => {
       const { subscriptionId, userId } = pi.metadata;
       if (!subscriptionId) break;
 
+      // Mark subscription as failed
       await SubscriptionModel.findByIdAndUpdate(subscriptionId, {
-        status: "failed",
+        status:    "failed",
         updatedAt: new Date(),
       });
 
-      // FIX: was "subscription:paymentFailed" — frontend listens for "payment:failed"
+      // Reflect failed status on the user document
+      await userModel.findByIdAndUpdate(userId, {
+        $set: { "subscription.status": "failed" },
+      });
+
       const io = getIo();
       io.to(String(userId)).emit("payment:failed", {
-        message: "Payment failed. Please try again.",
+        message:               "Payment failed. Please try again.",
         subscriptionId,
         stripePaymentIntentId: pi.id,
       });
 
-      console.log(`[Webhook] FAILED PaymentIntent: ${pi.id}, notified userId: ${userId}`);
+      console.log(
+        `[Webhook] FAILED PaymentIntent: ${pi.id}, notified userId: ${userId}`
+      );
       break;
     }
 

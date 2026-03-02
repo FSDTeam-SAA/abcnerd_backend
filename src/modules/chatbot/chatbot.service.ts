@@ -1,238 +1,202 @@
+// chatbot.service.ts
 import { GoogleGenAI } from "@google/genai";
-import { ChatbotModel } from "./chatbot.models";
-import { ICreateChatbot, IUpdateChatbot, IChatbotQuery } from "./chatbot.interface";
+import { Types } from "mongoose";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
+import type { ChatHistory, IChatIdentity, IChatResponse } from "./chatbot.interface";
+import { DailyChatHistoryModel } from "./chatbot.models";
 
-// ── Gemini setup ──────────────────────────
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
-// ── error wrapper ─────────────────────────
+// System instruction to prime the AI's behavior. Can be adjusted for different personalities or use cases.
+
+const SYSTEM_INSTRUCTION = `
+You are SwipeLang AI — a modern slang-focused translator and vocabulary assistant.
+Rules:
+- Reply ONLY in English.
+- Be concise, friendly, and accurate.
+- If user asks meaning + examples, respond with short meaning + real-life usage examples.
+`;
+
+const MODEL = "gemini-2.5-flash";
+const MAX_OUTPUT_TOKENS = 2048;
+const TEMPERATURE = 0.9;
+const MAX_HISTORY_CHARS = 12000;
+
+// helper function to handle Gemini API errors and throw user-friendly messages
+
 const handleGeminiError = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
     return await fn();
   } catch (err: any) {
-    // console.log(err);
-
-    if (err.message?.includes("429")) {
+    if (err.message?.includes("429"))
       throw new CustomError(429, "AI quota exceeded. Please try again later.");
-    }
-    if (err.message?.includes("404")) {
+    if (err.message?.includes("404"))
       throw new CustomError(500, "AI model not found. Please contact support.");
-    }
     throw new CustomError(500, err.message || "AI service error");
   }
 };
 
-// ─────────────────────────────────────────
-// CRUD
-// ─────────────────────────────────────────
-
-const createChatbot = async (data: ICreateChatbot) => {
-  const item = await ChatbotModel.create(data);
-  if (!item) throw new CustomError(400, "Chatbot not created");
-  return item;
+const getDayKeyUTC = (date = new Date()): string => {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 };
 
-const getAllChatbots = async (query: IChatbotQuery) => {
-  const { page = 1, limit = 10, search, status } = query;
-  const skip = (page - 1) * limit;
+// Trims chat history to fit within the max character limit, starting from the most recent messages.
+const trimHistoryByChars = (
+  history: ChatHistory,
+  maxChars = MAX_HISTORY_CHARS
+): ChatHistory => {
+  let total = 0;
+  const kept: ChatHistory = [];
 
-  const filter: any = { isDeleted: false };
-  if (status) filter.status = status;
-  if (search) {
-    filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-    ];
+  for (let i = history.length - 1; i >= 0; i--) {
+    const msg = history[i];
+    if (!msg) continue;
+    const charCount = msg.parts.map((p) => p.text ?? "").join(" ").length;
+    total += charCount;
+    if (total > maxChars) break;
+    kept.push(msg);
   }
 
-  const [items, total] = await Promise.all([
-    ChatbotModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-    ChatbotModel.countDocuments(filter),
-  ]);
+  return kept.reverse();
+};
 
+// Builds the filter and setOnInsert objects for upserting the daily chat doc based on user/session identity.
+const buildDayFilter = (identity: IChatIdentity, dayKey: string) => {
+  if (identity.userId) {
+    const uid = new Types.ObjectId(identity.userId);
+    return {
+      filter: { userId: uid, dayKey },
+      setOnInsert: { userId: uid, dayKey },
+    };
+  }
+
+  const sid = identity.sessionId ?? "anonymous";
   return {
-    items,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasNext: page < Math.ceil(total / limit),
-      hasPrev: page > 1,
-    },
+    filter: { sessionId: sid, dayKey },
+    setOnInsert: { sessionId: sid, dayKey },
   };
 };
 
-const getChatbotById = async (id: string) => {
-  const item = await ChatbotModel.findOne({ _id: id, isDeleted: false });
-  if (!item) throw new CustomError(404, "Chatbot not found");
-  return item;
-};
+// Retrieves today's chat doc for the user, or creates it if it doesn't exist.
+const getOrCreateDayDoc = async (identity: IChatIdentity) => {
+  const dayKey = getDayKeyUTC();
+  const { filter, setOnInsert } = buildDayFilter(identity, dayKey);
 
-const getChatbotBySlug = async (slug: string) => {
-  const item = await ChatbotModel.findOne({ slug, isDeleted: false });
-  if (!item) throw new CustomError(404, "Chatbot not found");
-  return item;
-};
-
-const updateChatbot = async (id: string, data: IUpdateChatbot) => {
-  const item = await ChatbotModel.findOneAndUpdate(
-    { _id: id, isDeleted: false },
-    { $set: data },
-    { new: true, runValidators: true }
+  return DailyChatHistoryModel.findOneAndUpdate(
+    filter,
+    { $setOnInsert: setOnInsert },
+    { upsert: true, new: true }
   );
-  if (!item) throw new CustomError(404, "Chatbot not found");
-  return item;
 };
 
-const deleteChatbot = async (id: string) => {
-  const item = await ChatbotModel.findOneAndUpdate(
-    { _id: id, isDeleted: false },
+// One-shot chat — sends the message without prior context. Persists both user and AI turns to the DB.
+const chat = async (
+  message: string,
+  identity: IChatIdentity = {}
+): Promise<IChatResponse> => {
+  if (!message?.trim()) throw new CustomError(400, "Message is required");
+
+  const dayDoc = await getOrCreateDayDoc(identity);
+
+  const aiResponse = await handleGeminiError(async () => {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: message,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        temperature: TEMPERATURE,
+      },
+    });
+    return response.text ?? "";
+  });
+
+  dayDoc.messages.push(
+    { role: "user", parts: [{ text: message }] },
+    { role: "model", parts: [{ text: aiResponse }] }
+  );
+  await dayDoc.save();
+  return { response: aiResponse };
+};
+
+// Context-aware chat — loads today's history as context and sends it with the message. Persists both user and AI turns to the DB.
+const chatWithHistory = async (
+  message: string,
+  identity: IChatIdentity = {}
+): Promise<IChatResponse> => {
+  if (!message?.trim()) throw new CustomError(400, "Message is required");
+
+  if (!identity.userId) {
+    throw new CustomError(401, "Authentication required to use chat history");
+  }
+
+  const dayDoc = await getOrCreateDayDoc(identity);
+  const trimmedHistory = trimHistoryByChars(dayDoc.messages as ChatHistory);
+
+  const aiResponse = await handleGeminiError(async () => {
+    const contents = [
+      ...trimmedHistory.map((msg) => ({
+        role: msg.role,
+        parts: msg.parts.map((p) => ({ text: p.text })),
+      })),
+      { role: "user" as const, parts: [{ text: message }] },
+    ];
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        temperature: TEMPERATURE,
+      },
+    });
+
+    return response.text ?? "";
+  });
+
+  dayDoc.messages.push(
+    { role: "user", parts: [{ text: message }] },
+    { role: "model", parts: [{ text: aiResponse }] }
+  );
+  await dayDoc.save();
+
+  return { response: aiResponse };
+};
+
+// Retrieves all non-deleted daily chat docs for the user/session, sorted by newest first.
+const getHistory = async (identity: IChatIdentity) => {
+  const query = identity.userId
+    ? { userId: new Types.ObjectId(identity.userId), isDeleted: false }
+    : { sessionId: identity.sessionId ?? "anonymous", isDeleted: false };
+
+  return DailyChatHistoryModel.find(query).sort({ dayKey: -1 }).lean();
+};
+
+// Retrieves a specific day's chat doc based on the dayKey and user/session identity.
+const getHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
+  const { filter } = buildDayFilter(identity, dayKey);
+  return DailyChatHistoryModel.findOne({ ...filter, isDeleted: false }).lean();
+};
+
+// Soft-deletes a specific day's chat doc by setting isDeleted to true.
+const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
+  const { filter } = buildDayFilter(identity, dayKey);
+  return DailyChatHistoryModel.findOneAndUpdate(
+    filter,
     { $set: { isDeleted: true } },
     { new: true }
   );
-  if (!item) throw new CustomError(404, "Chatbot not found");
-  return item;
-};
-
-const toggleStatus = async (id: string) => {
-  const item = await ChatbotModel.findOne({ _id: id, isDeleted: false });
-  if (!item) throw new CustomError(404, "Chatbot not found");
-  item.status = item.status === "active" ? "inactive" : "active";
-  await item.save();
-  return item;
-};
-
-// ─────────────────────────────────────────
-// GEMINI
-// ─────────────────────────────────────────
-
-type ChatHistory = { role: string; parts: { text: string }[] }[];
-
-// One-shot — no history
-const chat = async (message: string) => {
-  if (!message?.trim()) throw new CustomError(400, "Message is required");
-
-  return await handleGeminiError(async () => {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
-      contents: message,
-      config: {
-        systemInstruction: "You are a helpful AI assistant. Be concise, friendly, and accurate.",
-      },
-    });
-
-    return { response: response.text };
-  });
-};
-
-// Continuous — sends history every request
-const chatWithHistory = async (message: string, history: ChatHistory = []) => {
-  if (!message?.trim()) throw new CustomError(400, "Message is required");
-
-  return await handleGeminiError(async () => {
-    const contents = [
-      ...history,
-      { role: "user", parts: [{ text: message }] },
-    ];
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents,
-      config: {
-        maxOutputTokens: 2048,
-        temperature: 0.9,
-        systemInstruction: "You are a helpful AI assistant. Be concise, friendly, and accurate.",
-      },
-    });
-
-    const replyText = response.text ?? "";
-
-    const updatedHistory: ChatHistory = [
-      ...history,
-      { role: "user", parts: [{ text: message }] },
-      { role: "model", parts: [{ text: replyText }] },
-    ];
-
-    return { response: replyText, history: updatedHistory };
-  });
-};
-
-// Chat with a specific chatbot's personality from DB
-const chatWithBot = async (
-  chatbotId: string,
-  message: string,
-  history: ChatHistory = []
-) => {
-  if (!message?.trim()) throw new CustomError(400, "Message is required");
-
-  const chatbot = await ChatbotModel.findOne({ _id: chatbotId, isDeleted: false });
-  if (!chatbot) throw new CustomError(404, "Chatbot not found");
-  if (chatbot.status === "inactive") throw new CustomError(400, "This chatbot is inactive");
-
-  return await handleGeminiError(async () => {
-    const contents = [
-      ...history,
-      { role: "user", parts: [{ text: message }] },
-    ];
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents,
-      config: {
-        maxOutputTokens: 2048,
-        temperature: 0.9,
-        systemInstruction: `You are "${chatbot.title}". ${chatbot.description ?? ""}
-                Be helpful, concise, and always stay in character.`,
-      },
-    });
-
-    const replyText = response.text ?? "";
-
-    const updatedHistory: ChatHistory = [
-      ...history,
-      { role: "user", parts: [{ text: message }] },
-      { role: "model", parts: [{ text: replyText }] },
-    ];
-
-    return {
-      chatbot: { id: chatbot._id, title: chatbot.title },
-      response: replyText,
-      history: updatedHistory,
-    };
-  });
-};
-
-// Auto-generate description using AI
-const generateChatbotDescription = async (title: string) => {
-  if (!title?.trim()) throw new CustomError(400, "Title is required");
-
-  return await handleGeminiError(async () => {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Generate a short professional description (max 100 words) 
-            for an AI chatbot named "${title}". 
-            Return only the description text, no extra commentary.`,
-    });
-
-    return { description: response.text?.trim() ?? "" };
-  });
 };
 
 export const chatbotService = {
-  // CRUD
-  createChatbot,
-  getAllChatbots,
-  getChatbotById,
-  getChatbotBySlug,
-  updateChatbot,
-  deleteChatbot,
-  toggleStatus,
-  // Gemini
   chat,
   chatWithHistory,
-  chatWithBot,
-  generateChatbotDescription,
+  getHistory,
+  getHistoryByDay,
+  deleteHistoryByDay,
 };

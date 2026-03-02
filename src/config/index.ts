@@ -58,7 +58,10 @@ const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET as string,
   },
 
-    /* ================= Gemini API ================= */
+
+  //redis
+  redisUrl: process.env.REDIS_URL,
+  /* ================= Gemini API ================= */
   geminiApiKey: process.env.GEMINI_API_KEY as string,
 
   /* ================= Frontend ================= */
