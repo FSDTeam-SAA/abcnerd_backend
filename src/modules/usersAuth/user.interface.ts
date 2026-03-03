@@ -20,11 +20,10 @@ export interface IUser extends Document {
   password: string;
   role: string;
   profession: string;
-  profileImage:
-  {
+  profileImage: {
     public_id: string;
     secure_url: string;
-  },
+  };
   status: status;
   selfIntroduction: string;
   addressIds?: string[];
@@ -34,10 +33,10 @@ export interface IUser extends Document {
   verificationOtp: string | null;
   verificationOtpExpire: Date | null;
   //auth provider
-  provider: String,
+  provider: String;
   providerId: {
-    type: String,
-  },
+    type: String;
+  };
   balance: {
     wordSwipe: number;
     aiChat: number;
@@ -86,10 +85,9 @@ export interface AppleLoginResult {
   refreshToken: string;
 }
 
-
 export enum SubscriptionPlan {
   BASIC = "basic",
-  PRO = "pro",
+  PRO = "Pro",
   PREMIUM = "premium",
 }
 
@@ -116,6 +114,6 @@ export interface ISubscription {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
   startDate: Date;
-  endDate: Date;         // same as balance.validityDate — source of truth
-  lastResetDate?: Date;  // tracks when balance was last reset (prevents double-reset)
+  endDate: Date; // same as balance.validityDate — source of truth
+  lastResetDate?: Date; // tracks when balance was last reset (prevents double-reset)
 }
