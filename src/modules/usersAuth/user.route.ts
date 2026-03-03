@@ -36,31 +36,67 @@ import { rateLimiter } from "../../middleware/rateLimiter.middleware";
 
 const router = Router();
 
-router.post("/register-user", validateRequest(registerUserSchema), registration);
+router.post(
+  "/register-user",
+  validateRequest(registerUserSchema),
+  registration,
+);
 
 router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
 
-router.get("/get-all-user",authGuard, getalluser);
+router.get("/get-all-user", authGuard, getalluser);
 
 router.get("/get-single-user/:userId", authGuard, getSingleUser);
 
 router.get("/get-my-profile", authGuard, getmyprofile);
 
-router.patch("/update-user", authGuard as any, upload.single("image"), validateRequest(updateUserSchema), updateUser);
+router.patch(
+  "/update-user",
+  authGuard as any,
+  upload.single("image"),
+  validateRequest(updateUserSchema),
+  updateUser,
+);
 
-router.patch("/update-status/:userId", authGuard, allowRole("admin"), validateRequest(updateStatusSchema), updateStatus);
+router.patch(
+  "/update-status/:userId",
+  authGuard,
+  allowRole("admin"),
+  validateRequest(updateStatusSchema),
+  updateStatus,
+);
 
-router.patch("/update-password", rateLimiter(1, 5), authGuard, validateRequest(updatePasswordSchema), updatePassword);
+router.patch(
+  "/update-password",
+  rateLimiter(1, 5),
+  authGuard,
+  validateRequest(updatePasswordSchema),
+  updatePassword,
+);
 
 router.post("/logout", authGuard, logout);
 
-router.post("/forget-password", validateRequest(forgetPasswordSchema), forgetPassword);
+router.post(
+  "/forget-password",
+  validateRequest(forgetPasswordSchema),
+  forgetPassword,
+);
 
-router.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtpForgetPassword)
+router.post(
+  "/verify-otp",
+  validateRequest(verifyOtpSchema),
+  verifyOtpForgetPassword,
+);
 
-router.post("/reset-password/:token", validateRequest(resetPasswordSchema), resetPassword);
+router.post(
+  "/reset-password/:token",
+  validateRequest(resetPasswordSchema),
+  resetPassword,
+);
 
-router.route("/verify-account").post(validateRequest(verifyAccountSchema), verifyAccount);
+router
+  .route("/verify-account")
+  .post(validateRequest(verifyAccountSchema), verifyAccount);
 
 // token
 router.post("/generate-access-token", generateAccessToken);
@@ -73,6 +109,5 @@ router.post("/login-with-kakao", loginWithKakao);
 
 //apple login
 router.post("/login-with-apple", loginWithApple);
-
 
 export const userRoute = router;
