@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { status } from "./user.interface";
+import { role, status } from "./user.interface";
 
 export const registerUserSchema = z
   .object({
@@ -11,8 +11,9 @@ export const registerUserSchema = z
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
+    role: z.enum(["user", "admin"]).default("user").optional(),
   })
   .strict();
 
@@ -37,7 +38,7 @@ export const loginSchema = z
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
     rememberMe: z.boolean().default(false).optional(),
   })
@@ -79,7 +80,6 @@ export const verifyOtpSchema = z
   })
   .strict();
 
-
 export const resetPasswordSchema = z
   .object({
     password: z
@@ -88,7 +88,7 @@ export const resetPasswordSchema = z
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
     confirmPassword: z
       .string()
@@ -96,7 +96,7 @@ export const resetPasswordSchema = z
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
   })
   .strict()
@@ -105,14 +105,11 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-
 // export const refreshTokenSchema = z
 //   .object({
 //     refreshToken: z.string().min(1, "Refresh token required").optional(),
 //   })
 //   .strict();
-
-
 
 export const updatePasswordSchema = z
   .object({
@@ -123,14 +120,15 @@ export const updatePasswordSchema = z
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
-    confirmPassword: z.string()
+    confirmPassword: z
+      .string()
       .min(6, "Password must be at least 6 characters")
       .max(16, "Password must be at most 16 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+        "Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character",
       ),
   })
   .strict()
