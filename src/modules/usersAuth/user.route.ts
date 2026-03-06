@@ -44,7 +44,7 @@ router.post(
 
 router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
 
-router.get("/get-all-user", authGuard, getalluser);
+router.get("/get-all-user", authGuard, allowRole("admin"),getalluser);
 
 router.get("/get-single-user/:userId", authGuard, getSingleUser);
 
