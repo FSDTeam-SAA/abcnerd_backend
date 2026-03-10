@@ -208,7 +208,7 @@ async getmyprofile(req: any) {
 
     //find the user in database
     const user = await userModel.findOneAndUpdate({ email: email }, data, {
-      new: true,
+      returnDocument: "after",
     });
     if (!user) throw new CustomError(400, "User not found");
 
@@ -233,7 +233,7 @@ async getmyprofile(req: any) {
     const { status } = req.body as { status: status };
 
     const user = await userModel.findOneAndUpdate({ _id: userId }, { status }, {
-      new: true,
+      returnDocument: "after",
     }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -isDeleted");
     if (!user) throw new CustomError(400, "User not found");
     return user

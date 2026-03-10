@@ -81,7 +81,8 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.sendSuccess(res, 200, "User updated successfully", {
     email: result.email,
     name: result.name,
-    image: result.profileImage
+    image: result.profileImage,
+    profileImage: result.profileImage
   });
 });
 
