@@ -7,7 +7,7 @@ import { authGuard } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 
-//TODO: customize as needed
+//: customize as needed
 
 router.post("/checkout", authGuard, createSubscriptionCheckout);
 router.get("/success", successPayment);

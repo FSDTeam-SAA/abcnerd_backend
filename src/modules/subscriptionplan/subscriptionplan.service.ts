@@ -5,7 +5,7 @@ import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
 import { role } from "../usersAuth/user.interface";
 
-//TODO: create single subscriptionplan
+//: create single subscriptionplan
 const createSubscriptionPlan = async (data: ICreateSubscriptionPlan) => {
   const item = await SubscriptionPlanModel.create(data);
   if (!item) throw new CustomError(400, "SubscriptionPlan not created");
@@ -13,7 +13,7 @@ const createSubscriptionPlan = async (data: ICreateSubscriptionPlan) => {
   return item;
 };
 
-//TODO: get single subscriptionplan by id
+//: get single subscriptionplan by id
 const getSubscriptionPlanById = async (subscriptionplanId: string) => {
   const subscriptionplan = await SubscriptionPlanModel.findOne({ _id: subscriptionplanId, isDeleted: false });
   if (!subscriptionplan) throw new CustomError(404, "SubscriptionPlan not found");
@@ -21,7 +21,7 @@ const getSubscriptionPlanById = async (subscriptionplanId: string) => {
   return subscriptionplan;
 };
 
-//TODO: get all subscriptionplan with pagination and search and filter --- IGNORE ---
+//: get all subscriptionplan with pagination and search and filter --- IGNORE ---
 export const getAllSubscriptionPlan = async (req: any) => {
   const {
     page: pageQuery,
@@ -113,7 +113,7 @@ export const getAllSubscriptionPlan = async (req: any) => {
   };
 };
 
-//TODO: update single subscriptionplan by id
+//: update single subscriptionplan by id
 const updateSubscriptionPlan = async (subscriptionplanId: string, data: Partial<ICreateSubscriptionPlan>) => {
   const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, data, { new: true, runValidators: true });
   if (!subscriptionplan) throw new CustomError(404, "SubscriptionPlan not found");
@@ -121,7 +121,7 @@ const updateSubscriptionPlan = async (subscriptionplanId: string, data: Partial<
   return subscriptionplan;
 }
 
-//TODO: delete single subscriptionplan by id (soft delete)
+//: delete single subscriptionplan by id (soft delete)
 const deleteSubscriptionPlan = async (subscriptionplanId: string) => {
   const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, { isDeleted: true }, { new: true });
   if (!subscriptionplan) throw new CustomError(404, "SubscriptionPlan not found");

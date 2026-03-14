@@ -1,5 +1,5 @@
 import { z } from "zod";
-//TODO: customize as needed
+//: customize as needed
 
 export const createCategoryWordSchema = z.object({
   name: z.string()

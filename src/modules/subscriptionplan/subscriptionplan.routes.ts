@@ -8,9 +8,9 @@ import { permission } from "../../middleware/permission.middleware";
 
 const router = express.Router();
 
-//TODO: customize as needed
+//: customize as needed
 
-router.post("/create-subscriptionplan", authGuard , permission(["admin"]), validateRequest(createSubscriptionPlanSchema), createSubscriptionPlan);
+router.post("/create-subscriptionplan", authGuard, permission(["admin"]), validateRequest(createSubscriptionPlanSchema), createSubscriptionPlan);
 router.get("/get-subscriptionplan/:subscriptionplanId", authGuard, permission(["admin", "user"]), getSubscriptionPlanById);
 router.get("/get-all-subscriptionplans", authGuard, permission(["admin", "user"]), getAllSubscriptionPlan);
 router.patch("/update-subscriptionplan/:subscriptionplanId", authGuard, permission(["admin"]), validateRequest(updateSubscriptionPlanSchema), updateSubscriptionPlan);

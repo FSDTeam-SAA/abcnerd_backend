@@ -1,0 +1,75 @@
+ 1) Phase1_Requirements_Implementation_Map.pdf  ✅ (Best proof + safest)
+
+*What it contains (demo layout):*
+
+*Module: Learning History*
+
+* *Requirement:* Track user learning progress per lesson + timestamps
+* *Routes:*
+
+  * POST /api/v1/learning-history
+  * GET /api/v1/learning-history/:userId
+* *Route file:* routes/learningHistory.routes.js
+* *Controller:* controllers/learningHistory.controller.js
+* *Service:* services/learningHistory.service.js
+* *Model:* models/LearningHistory.model.js
+* *Key validations:* userId exists, lessonId valid, upsert logic
+
+*Module: Quiz Generation & Attempts*
+
+* Routes:
+
+  * POST /api/v1/quiz/generate
+  * POST /api/v1/quiz/attempts
+  * GET /api/v1/quiz/attempts/:userId
+* Files: routes/quiz.routes.js → controllers/quiz.controller.js → services/quiz.service.js
+* Models: Quiz.model.js, QuizAttempt.model.js
+
+*Module: Chat History + Session Link*
+
+* Routes:
+
+  * POST /api/v1/chat/message
+  * GET /api/v1/chat/sessions/:sessionId/messages
+* Models: ChatSession.model.js, ChatMessage.model.js
+
+➡️ *This doc must include “exact file paths”* (client asked this).
+
+---
+
+### 2) DB_Schema_Overview.pdf ✅ (safe proof)
+
+*What it contains (demo):*
+
+* A small diagram + fields list (no full code needed)
+
+Example:
+
+*LearningHistory*
+
+* user: ObjectId(ref User)
+* lessonId: ObjectId
+* progress: Number
+* lastAccessedAt: Date
+* Index: { user, lessonId } unique
+
+*QuizAttempt*
+
+* user: ObjectId
+* quizId: ObjectId
+* answers: []
+* score: Number
+* createdAt
+
+*ChatSession*
+
+* user: ObjectId
+* sessionKey: String
+* createdAt
+
+*ChatMessage*
+
+* session: ObjectId(ref ChatSession)
+* sender: enum(user/system)
+* message: String
+* createdAt

@@ -4,14 +4,14 @@ import ApiResponse from "../../utils/apiResponse";
 import { ICreateSubscriptionPlan } from "./subscriptionplan.interface";
 import { subscriptionplanService } from "./subscriptionplan.service";
 
-//TODO: create subscriptionplan
+//: create subscriptionplan
 export const createSubscriptionPlan = asyncHandler(async (req: Request, res: Response) => {
   const data: ICreateSubscriptionPlan = req.body;
   const item = await subscriptionplanService.createSubscriptionPlan(data);
   ApiResponse.sendSuccess(res, 200, "SubscriptionPlan created", item);
 });
 
-//TODO: get single subscriptionplan
+//: get single subscriptionplan
 export const getSubscriptionPlanById = asyncHandler(async (req: Request, res: Response) => {
   const subscriptionplanId = req.params.subscriptionplanId as string;
   if (!subscriptionplanId) throw new Error("SubscriptionPlanId not found");
@@ -19,13 +19,13 @@ export const getSubscriptionPlanById = asyncHandler(async (req: Request, res: Re
   ApiResponse.sendSuccess(res, 200, "SubscriptionPlan fetched", subscriptionplan);
 });
 
-//TODO: get all subscriptionplan with pagination and search and filter --- IGNORE ---
+//: get all subscriptionplan with pagination and search and filter --- IGNORE ---
 export const getAllSubscriptionPlan = asyncHandler(async (req: Request, res: Response) => {
   const { subscriptionplans, meta } = await subscriptionplanService.getAllSubscriptionPlan(req);
   ApiResponse.sendSuccess(res, 200, "SubscriptionPlan fetched", subscriptionplans, meta);
 });
 
-//TODO: update subscriptionplan
+//: update subscriptionplan
 export const updateSubscriptionPlan = asyncHandler(async (req: Request, res: Response) => {
   const subscriptionplanId = req.params.subscriptionplanId as string;
   if (!subscriptionplanId) throw new Error("SubscriptionPlanId not found");
@@ -34,7 +34,7 @@ export const updateSubscriptionPlan = asyncHandler(async (req: Request, res: Res
   ApiResponse.sendSuccess(res, 200, "SubscriptionPlan updated", subscriptionplan);
 });
 
-//TODO: delete subscriptionplan (soft delete)
+//: delete subscriptionplan (soft delete)
 export const deleteSubscriptionPlan = asyncHandler(async (req: Request, res: Response) => {
   const subscriptionplanId = req.params.subscriptionplanId as string;
   if (!subscriptionplanId) throw new Error("SubscriptionPlanId not found");

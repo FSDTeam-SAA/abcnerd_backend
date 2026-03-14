@@ -5,7 +5,7 @@ import { uploadCloudinary } from "../../helpers/cloudinary";
 import mongoose from "mongoose";
 import { paginationHelper } from "../../utils/pagination";
 
-//TODO: customize as needed
+//: customize as needed
 
 export type InvoiceStatus = "paid" | "pending" | "failed" | "refunded" | "void";
 
@@ -32,7 +32,7 @@ export const createInvoice = async (payload: ICreateInvoice) => {
   return invoice;
 };
 
-//TODO: get single invoice, only own invoice can be fetched
+//: get single invoice, only own invoice can be fetched
 const getInvoice = async (invoiceId: string, userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(invoiceId)) throw new CustomError(400, "Invalid invoiceId");
 
@@ -42,7 +42,7 @@ const getInvoice = async (invoiceId: string, userId: string) => {
   return invoice;
 };
 
-//Todo: get my all invoices user and admin
+//: get my all invoices user and admin
 const getAllInvoices = async (req: any) => {
   const { page: pageQuery, limit: limitQuery } = req.query;
   const { _id: userId } = req.user;
@@ -71,7 +71,7 @@ const getAllInvoices = async (req: any) => {
   };
 };
 
-//Todo: delete invoice, only own invoice can be deleted
+//: delete invoice, only own invoice can be deleted
 const deleteInvoice = async (invoiceId: string, userId: string) => {
   if (!mongoose.Types.ObjectId.isValid(invoiceId)) throw new CustomError(400, "Invalid invoiceId");
 
