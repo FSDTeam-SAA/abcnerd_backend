@@ -4,9 +4,7 @@ import { Server } from "socket.io";
 import { initSocket } from "./socket/server";
 import routes from "./routes/index.api";
 import { globalErrorHandler } from "./helpers/globalErrorHandler";
-import {
-  serverRunningTemplate,
-} from "./tempaletes/serverlive.template";
+import { serverRunningTemplate } from "./tempaletes/serverlive.template";
 import config from "./config";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
@@ -26,15 +24,29 @@ if (config.env === "development") {
   app.use(morgan("short"));
 }
 
-app.use(cors({
-  origin: ["*", "http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "*",
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+  }),
+);
 app.post(
   "/api/v1/payment/webhook",
   express.raw({ type: "application/json" }),
-  StripeWebhook
+  StripeWebhook,
 );
+app.get("/api/v1/ping", (req, res) => {
+  res.json({
+    success: true,
+    message: "Server is alive",
+    time: new Date(),
+  });
+});
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

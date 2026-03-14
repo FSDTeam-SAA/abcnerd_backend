@@ -7,3 +7,5 @@ import config from "../config";
 export const stripe = new Stripe(config.stripe.secretKey as string, {
     apiVersion: "2026-02-25.clover",
 });
+
+//sensitive doc: https://stripe.com/docs/keys#test-live-modes

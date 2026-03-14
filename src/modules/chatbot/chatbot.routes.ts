@@ -2,11 +2,11 @@
 import express from "express";
 import { validateRequest } from "../../middleware/validateRequest.middleware";
 import {
-    chat,
-    chatWithHistory,
-    getHistory,
-    getHistoryByDay,
-    deleteHistoryByDay,
+  chat,
+  chatWithHistory,
+  getHistory,
+  getHistoryByDay,
+  deleteHistoryByDay,
 } from "./chatbot.controller";
 import { chatMessageSchema } from "./chatbot.validation";
 import { authGuard } from "../../middleware/auth.middleware";
