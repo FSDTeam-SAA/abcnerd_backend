@@ -4,8 +4,11 @@ import {
   getUserQuizHistoryService,
   getQuizByIdService,
   getAllQuizzesAdminService,
+  retakeQuizService,
 } from "./quiz.service";
 import { Types } from "mongoose";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
 export const generateQuiz = async (
   req: Request,
@@ -79,3 +82,14 @@ export const getAllQuizzesAdmin = async (
     next(err as Error);
   }
 };
+
+export const retakeQuizController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = (req as any).user._id;
+    const { quizId } = req.params;
+
+    const result = await retakeQuizService(userId, quizId as string);
+
+    ApiResponse.sendSuccess(res, 200, "Quiz restarted successfully", result);
+  },
+);

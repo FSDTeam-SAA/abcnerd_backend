@@ -6,6 +6,7 @@ import { Progress } from "../progress/progress.models";
 import { QuestionModel } from "../question/question.models";
 import { NotebookModel } from "../notebook/notebook.models";
 import { QuizModel } from "./quiz.models";
+import { QuizAttemptModel } from "../quizattempt/quizattempt.models";
 
 export const generateQuizService = async (
   userId: Types.ObjectId,
@@ -122,4 +123,49 @@ export const getAllQuizzesAdminService = async () => {
     .populate("category", "name slug")
     .populate("attempt")
     .sort({ createdAt: -1 });
+};
+
+export const retakeQuizService = async (
+  userId: Types.ObjectId,
+  quizId: string,
+) => {
+  if (!Types.ObjectId.isValid(quizId)) {
+    throw new CustomError(400, "Invalid quiz id");
+  }
+
+  const quiz = await QuizModel.findOne({ _id: quizId, user: userId });
+
+  if (!quiz) {
+    throw new CustomError(404, "Quiz not found");
+  }
+
+  // delete old attempt
+  await QuizAttemptModel.deleteMany({ quizId: quiz._id });
+
+  // remove quiz questions from progress attemptedQuestions
+  const progress = await Progress.findOne({ user: userId });
+
+  if (progress) {
+    progress.attemptedQuestions = progress.attemptedQuestions.filter(
+      (qId) => !quiz.questions.includes(qId),
+    );
+
+    await progress.save();
+  }
+
+  // create new quiz with same questions
+  const newQuiz = await QuizModel.create({
+    user: userId,
+    category: quiz.category,
+    questions: quiz.questions,
+    status: "ongoing",
+    totalQuestions: quiz.questions.length,
+  });
+
+  return {
+    message: "Quiz retake started",
+    quizId: newQuiz._id,
+    totalQuestions: quiz.questions.length,
+    timePerQuestion: 60,
+  };
 };
