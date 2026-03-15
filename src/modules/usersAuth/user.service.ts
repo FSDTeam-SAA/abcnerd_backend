@@ -166,21 +166,21 @@ export const userService = {
         total: totalUsers,
       },
     };
-},
+  },
 
-//get single user
+  //get single user
   async getUser(userId: string) {
-  const user = await userModel.findOne({ _id: userId }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
-  if (!user) throw new CustomError(400, "User not found");
-  return user;
-},
-//get single user
-async getmyprofile(req: any) {
-  const { email } = req?.user as { email: string };
-  const user = await userModel.findOne({ email: email }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
-  if (!user) throw new CustomError(400, "User not found");
-  return user;
-},
+    const user = await userModel.findOne({ _id: userId }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
+    if (!user) throw new CustomError(400, "User not found");
+    return user;
+  },
+  //get single user
+  async getmyprofile(req: any) {
+    const { email } = req?.user as { email: string };
+    const user = await userModel.findOne({ email: email }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -verificationOtpExpire -isDeleted -deletedAt -rememberMe ");
+    if (!user) throw new CustomError(400, "User not found");
+    return user;
+  },
 
   //update user
   async updateUser(req: any) {
@@ -208,7 +208,7 @@ async getmyprofile(req: any) {
 
     //find the user in database
     const user = await userModel.findOneAndUpdate({ email: email }, data, {
-      new: true,
+      returnDocument: "after",
     });
     if (!user) throw new CustomError(400, "User not found");
 
@@ -233,7 +233,7 @@ async getmyprofile(req: any) {
     const { status } = req.body as { status: status };
 
     const user = await userModel.findOneAndUpdate({ _id: userId }, { status }, {
-      new: true,
+      returnDocument: "after",
     }).select("-password -passwordResetToken -passwordResetExpire -refreshToken -__v -createdAt -updatedAt -emailVerifiedAt -emailVerifiedOtp -verificationOtp -isDeleted");
     if (!user) throw new CustomError(400, "User not found");
     return user
@@ -360,7 +360,7 @@ async getmyprofile(req: any) {
     return accessToken;
   },
 
-  //TODO: login with google
+  //: login with google
   async loginWithGoogle(token: string) {
     // Initialize Google OAuth client
     const client = new OAuth2Client(config.provider.googleClientId);
@@ -398,7 +398,7 @@ async getmyprofile(req: any) {
     };
   },
 
-  //TODO: login with google
+  //: login with google
   async loginWithKakao(code: string) {
     const tokenResponse = await axios.post(
       "https://kauth.kakao.com/oauth/token",
@@ -458,7 +458,7 @@ async getmyprofile(req: any) {
     return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
   },
 
-  //TODO: login with apple
+  //: login with apple
   async loginWithApple(identityToken: string, userName?: string): Promise<AppleLoginResult> {
     // Verify identity token
     const applePayload: any = await appleSignin.verifyIdToken(identityToken, {

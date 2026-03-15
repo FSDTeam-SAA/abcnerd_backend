@@ -1,9 +1,9 @@
 import mongoose, { Schema } from "mongoose";
 import slugify from "slugify";
 import CustomError from "../../helpers/CustomError";
-import {  ICategoryWord } from "./categoryword.interface";
+import { ICategoryWord } from "./categoryword.interface";
 
-//TODO: customize as needed
+//: customize as needed
 
 const categorywordSchema = new Schema<ICategoryWord>({
   name: {
@@ -48,7 +48,7 @@ categorywordSchema.pre("findOneAndUpdate", async function () {
   }
 
   if (update?.name) {
-    update.slug = slugify(update.name , {
+    update.slug = slugify(update.name, {
       lower: true,
       strict: true,
       trim: true,

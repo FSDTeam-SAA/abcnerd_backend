@@ -4,6 +4,7 @@ import CustomError from "../../helpers/CustomError";
 import { Progress } from "./progress.models";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
+import { paginationHelper } from "../../utils/pagination";
 
 // ── 1. User এর progress summary ──
 export const getProgressService = async (userId: Types.ObjectId) => {
@@ -36,49 +37,111 @@ export const getProgressWordsService = async (
   return progress[type];
 };
 
-export const getReviewLaterService = async (
-  userId: Types.ObjectId,
-  options: {
-    page?: number;
-    limit?: number;
-    wordType?: WordType;
-  },
-) => {
-  const { page = 1, limit = 10, wordType } = options;
+export const getReviewLaterService = async (req: any) => {
+  const {
+    page: pagebody,
+    limit: limitbody,
+    sortBy = "desc",
+    isactive = "all",
+    categoryType,
+    search,
+    wordType,
+  } = req.query;
+
+  const userId = req?.user?._id;
+  const role = req?.user?.role;
+
+  if (!userId || !Types.ObjectId.isValid(userId)) {
+    throw new CustomError(400, "Invalid user id");
+  }
+
+  const { page, limit, skip } = paginationHelper(pagebody, limitbody);
 
   const progress = await Progress.findOne({ user: userId });
 
   if (!progress) {
-    throw new Error("Progress not found");
+    throw new CustomError(404, "Progress not found");
   }
 
-  const filter: any = {
-    _id: { $in: progress.reviewLater },
+  let filter: any = {
+    _id: { $in: progress.reviewLater || [] },
   };
+
+  // filter status
+
+  if (role === "admin") {
+    const allowedStatus = ["active", "inactive", "blocked", "all"];
+
+    if (!allowedStatus.includes(isactive)) {
+      throw new CustomError(
+        400,
+        "Invalid isactive value. Allowed: active, inactive, blocked, all"
+      );
+    }
+
+    if (isactive !== "all") {
+      filter.status = isactive;
+    }
+  } else {
+    filter.status = "active";
+  }
+
+  // category type filter
+
+  if (categoryType) {
+    filter.categoryType = categoryType;
+  }
+
+  //word type filter
 
   if (wordType) {
     filter.wordType = wordType;
   }
 
-  const skip = (page - 1) * limit;
+  ///search filter
 
-  const [words, total] = await Promise.all([
+  if (search) {
+    filter.$or = [
+      { word: { $regex: search, $options: "i" } },
+      { synonyms: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (role !== "admin") {
+    filter.status = "active";
+  }
+
+  //sort
+
+  const allowedSortBy = ["asc", "desc"];
+  if (!allowedSortBy.includes(sortBy)) {
+    throw new CustomError(
+      400,
+      "Invalid sortBy value. Allowed values are 'asc', 'desc'"
+    );
+  }
+
+  const sortValue = sortBy === "asc" ? 1 : -1;
+
+  const [words, totalReviewLater] = await Promise.all([
     WordmanagementModel.find(filter)
-      .select("word synonyms description slug wordType")
+      .select("word synonyms description slug wordType categoryType status createdAt")
+      .sort({ createdAt: sortValue })
       .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }),
+      .limit(limit),
 
     WordmanagementModel.countDocuments(filter),
   ]);
 
+  const totalPage = Math.ceil(totalReviewLater / limit);
+
   return {
-    data: words,
-    pagination: {
-      total,
+    wordmanagements: words,
+    meta: {
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPage,
+      totalReviewLater,
     },
   };
 };

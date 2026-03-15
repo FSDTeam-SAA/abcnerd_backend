@@ -5,7 +5,7 @@ import ApiResponse from "../../utils/apiResponse";
 import config from "../../config";
 import { userService } from "./user.service";
 
-//TODO: Register user
+//: Register user
 export const registration = asyncHandler(async (req, res) => {
   const user = await userService.registerUser(req.body);
   ApiResponse.sendSuccess(res, 201, "User registered successfully", {
@@ -14,7 +14,7 @@ export const registration = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: Verify account by otp sent to email
+//: Verify account by otp sent to email
 export const verifyAccount = asyncHandler(async (req, res) => {
   const user = await userService.verifyAccount(req.body.email, req.body.otp);
   ApiResponse.sendSuccess(res, 200, "Accunt successfully verified", {
@@ -23,7 +23,7 @@ export const verifyAccount = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: Login user
+//: Login user
 export const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await userService.login(
     req.body.email,
@@ -56,42 +56,43 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: get all users
+//: get all users
 export const getalluser = asyncHandler(async (req, res) => {
 
-  const { users ,meta} = await userService.getAllUsers(req);
+  const { users, meta } = await userService.getAllUsers(req);
   ApiResponse.sendSuccess(res, 200, "User fetched successfully", users, meta);
 });
 
-//TODO: get single user
+//: get single user
 export const getSingleUser = asyncHandler(async (req, res) => {
-  const{ userId } = req?.params as { userId: string };
+  const { userId } = req?.params as { userId: string };
   const user = await userService.getUser(userId);
   ApiResponse.sendSuccess(res, 200, "User fetched successfully", user);
 });
-//TODO: get my profile
+//: get my profile
 export const getmyprofile = asyncHandler(async (req, res) => {
   const user = await userService.getmyprofile(req);
   ApiResponse.sendSuccess(res, 200, "Profile data fetched successfully", user);
 });
 
-//TODO: update user also profile image
+//: update user also profile image
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const result = await userService.updateUser(req);
   ApiResponse.sendSuccess(res, 200, "User updated successfully", {
     email: result.email,
     name: result.name,
-    image: result.profileImage
+    image: result.profileImage,
+    profileImage: result.profileImage
   });
 });
 
-//TODO: update user status by id
+//: update user status by id
 export const updateStatus = asyncHandler(async (req: Request, res: Response) => {
   const result = await userService.updateStatus(req);
   ApiResponse.sendSuccess(res, 200, "User status updated successfully", result);
 })
 
-//TODO: update password
+//: update password
 export const updatePassword = asyncHandler(async (req: Request, res: Response) => {
   await userService.updatePassword(req);
   ApiResponse.sendSuccess(
@@ -101,7 +102,7 @@ export const updatePassword = asyncHandler(async (req: Request, res: Response) =
   );
 });
 
-//TODO: Logout user
+//: Logout user
 export const logout = asyncHandler(async (req: Request, res: Response
 ) => {
   const { email } = req.user as { email: string };
@@ -113,7 +114,7 @@ export const logout = asyncHandler(async (req: Request, res: Response
   ApiResponse.sendSuccess(res, 200, "Logged out", {});
 });
 
-//TODO: forget password
+//: forget password
 export const forgetPassword = asyncHandler(async (req, res) => {
   const user = await userService.forgetPassword(req.body.email);
   ApiResponse.sendSuccess(res, 200, "Reset link sent to email", {
@@ -123,7 +124,7 @@ export const forgetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: verify otp
+//: verify otp
 export const verifyOtpForgetPassword = asyncHandler(async (req, res) => {
   const { email, otp } = req.body
   const user = await userService.verifyOtp(email, otp);
@@ -133,7 +134,7 @@ export const verifyOtpForgetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: reset password
+//: reset password
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -144,7 +145,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   ApiResponse.sendSuccess(res, 200, "Password reset successful",);
 });
 
-//TODO: generate access token
+//: generate access token
 export const generateAccessToken = asyncHandler(async (req, res) => {
   const refreshToken =
     req.cookies?.refreshToken ||
@@ -162,7 +163,7 @@ export const generateAccessToken = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: Login With Google
+//: Login With Google
 export const loginWithGoogle = asyncHandler(async (req, res) => {
   const { email, name, accessToken, refreshToken } = await userService.loginWithGoogle(req.body.token);
   ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
@@ -173,7 +174,7 @@ export const loginWithGoogle = asyncHandler(async (req, res) => {
   });
 });
 
-// //TODO: login with kakao auth
+// //: login with kakao auth
 export const loginWithKakao = asyncHandler(async (req, res) => {
   const code = req.body
   if (!code) throw new Error("Code is missing, please sent code in request body");
@@ -186,7 +187,7 @@ export const loginWithKakao = asyncHandler(async (req, res) => {
   });
 });
 
-//TODO: login with apple auth
+//: login with apple auth
 export const loginWithApple = asyncHandler(async (req, res) => {
   const { identityToken, userName } = req.body as { identityToken: string; userName: string };
   if (!identityToken) throw new Error("Identity token is missing, please sent identity token in request body");

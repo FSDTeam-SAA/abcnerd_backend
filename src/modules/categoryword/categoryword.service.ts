@@ -5,7 +5,7 @@ import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 
-//TODO: customize as needed
+//: customize as needed
 
 const createCategoryWord = async (data: ICreateCategoryWord) => {
   const categoryWord = await CategoryWordModel.create(data);
@@ -14,7 +14,7 @@ const createCategoryWord = async (data: ICreateCategoryWord) => {
   return categoryWord;
 };
 
-//TODO: get all categorywords
+//: get all categorywords
 const getAllCategoryWords = async (req: any) => {
   const { page: pagebody, limit: limitbody, sortBy = "asc", isactive = "all" } = req.query;
   const { role } = req?.user;

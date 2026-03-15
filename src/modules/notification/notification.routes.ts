@@ -8,7 +8,7 @@ import { permission } from "../../middleware/permission.middleware";
 
 const router = express.Router();
 
-//TODO: customize as needed
+//: customize as needed
 
 // router.post("/create-notification",  validateRequest(createNotificationSchema), createNotification); //!only system can create notifications, so no need of validation and multer
 router.get("/my-notifications", authGuard, permission(["admin", "user"]), getMyNotifications);

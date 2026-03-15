@@ -4,7 +4,7 @@ import CustomError from "../../helpers/CustomError";
 import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
 
-//TODO: customize as needed
+//: customize as needed
 
 const createWordmanagement = async (data: ICreateWordmanagement) => {
   const item = await WordmanagementModel.create(data);
@@ -111,7 +111,7 @@ const getWordmanagementById = async (role: string, wordmanagementId: string) => 
   return wordmanagement;
 };
 
-//TODO: update wordmanagement by wordmanagementId
+//: update wordmanagement by wordmanagementId
 const updateWordmanagement = async (wordmanagementId: string, data: any) => {
 
   const wordmanagement = await WordmanagementModel.findOneAndUpdate(
@@ -135,7 +135,7 @@ const updateWordmanagement = async (wordmanagementId: string, data: any) => {
   return wordmanagement;
 };
 
-//TODO: delete wordmanagement by wordmanagementId
+//: delete wordmanagement by wordmanagementId
 const deleteWordmanagement = async (wordmanagementId: string) => {
   const wordmanagement = await WordmanagementModel.findByIdAndDelete(wordmanagementId);
   if (!wordmanagement) throw new CustomError(400, "Wordmanagement not found");
