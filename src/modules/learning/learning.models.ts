@@ -12,7 +12,7 @@ const learningSchema = new Schema<ILearning>(
     },
     dailyGoal: {
       type: Number,
-      required: true,
+      // required: true,
     },
     estimatedTime: {
       type: Number,

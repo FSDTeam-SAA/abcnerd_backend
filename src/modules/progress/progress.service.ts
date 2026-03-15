@@ -5,11 +5,19 @@ import { Progress } from "./progress.models";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 import { paginationHelper } from "../../utils/pagination";
+import { userModel } from "../usersAuth/user.models";
 
-// ── 1. User এর progress summary ──
 export const getProgressService = async (userId: Types.ObjectId) => {
   const progress = await Progress.findOne({ user: userId });
   if (!progress) throw new CustomError(404, "Progress not found");
+
+  const user = await userModel.findById(userId).select("dailyGoal");
+  if (!user) throw new CustomError(404, "User not found");
+
+  const dailyGoal = user.dailyGoal || 0;
+  const memorizedToday = progress.dailyStat?.memorizedCount || 0;
+
+  const remainingGoal = Math.max(dailyGoal - memorizedToday, 0);
 
   return {
     score: progress.score,
@@ -19,6 +27,10 @@ export const getProgressService = async (userId: Types.ObjectId) => {
     favoriteCount: progress.markFavorite.length,
     reviewLaterCount: progress.reviewLater.length,
     lastActionDate: progress.lastActionDate,
+    latestLearningCategory: progress.latestLearningCategory,
+    dailyGoal,
+    memorizedToday,
+    remainingGoal,
   };
 };
 
@@ -75,7 +87,7 @@ export const getReviewLaterService = async (req: any) => {
     if (!allowedStatus.includes(isactive)) {
       throw new CustomError(
         400,
-        "Invalid isactive value. Allowed: active, inactive, blocked, all"
+        "Invalid isactive value. Allowed: active, inactive, blocked, all",
       );
     }
 
@@ -117,7 +129,7 @@ export const getReviewLaterService = async (req: any) => {
   if (!allowedSortBy.includes(sortBy)) {
     throw new CustomError(
       400,
-      "Invalid sortBy value. Allowed values are 'asc', 'desc'"
+      "Invalid sortBy value. Allowed values are 'asc', 'desc'",
     );
   }
 
@@ -125,7 +137,9 @@ export const getReviewLaterService = async (req: any) => {
 
   const [words, totalReviewLater] = await Promise.all([
     WordmanagementModel.find(filter)
-      .select("word synonyms description slug wordType categoryType status createdAt")
+      .select(
+        "word synonyms description slug wordType categoryType status createdAt",
+      )
       .sort({ createdAt: sortValue })
       .skip(skip)
       .limit(limit),

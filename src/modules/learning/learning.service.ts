@@ -9,17 +9,20 @@ import { userModel } from "../usersAuth/user.models";
 export const createLearningSessionService = async (
   userId: Types.ObjectId,
   category: Types.ObjectId,
-  dailyGoal: number,
   wordType: string,
 ) => {
+  const user = await userModel.findById(userId).select("dailyGoal");
+  if (!user) throw new CustomError(404, "User not found");
+
+  const dailyGoal = user.dailyGoal;
+
   await Learning.findOneAndUpdate(
     { user: userId, isActive: true },
     { isActive: false },
   );
 
   const categoryDoc = await CategoryWordModel.findById(category).select("name");
-  console.log("categoryDoc", categoryDoc);
-  if (!categoryDoc) throw new CustomError(404, "Catergory not found");
+  if (!categoryDoc) throw new CustomError(404, "Category not found");
 
   const session = await Learning.create({
     user: userId,
@@ -28,6 +31,26 @@ export const createLearningSessionService = async (
     isActive: true,
     wordType: wordType,
   });
+
+  // ✅ Update latestLearningCategory (max 3)
+  const progress = await Progress.findOne({ user: userId });
+
+  if (progress) {
+    let categories = progress.latestLearningCategory || [];
+
+    // remove duplicate if exists
+    categories = categories.filter((c) => c !== categoryDoc.name);
+
+    // add new category to beginning
+    categories.unshift(categoryDoc.name);
+
+    // keep only last 3
+    categories = categories.slice(0, 3);
+
+    progress.latestLearningCategory = categories;
+
+    await progress.save();
+  }
 
   return session;
 };

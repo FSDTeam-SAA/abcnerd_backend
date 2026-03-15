@@ -20,4 +20,5 @@ export interface IProgress {
   lastActionDate: Date | null;
   nextVideoAt: boolean;
   dailyStat: IDailyStat | null;
+  latestLearningCategory: string[] | null;
 }
