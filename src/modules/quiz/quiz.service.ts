@@ -7,7 +7,6 @@ import { QuestionModel } from "../question/question.models";
 import { NotebookModel } from "../notebook/notebook.models";
 import { QuizModel } from "./quiz.models";
 
-// ── Generate Quiz (User) ──────────────────────────────────
 export const generateQuizService = async (
   userId: Types.ObjectId,
   categoryId: string,
@@ -19,7 +18,6 @@ export const generateQuizService = async (
   const category = await CategoryWordModel.findById(categoryId);
   if (!category) throw new CustomError(404, "Category not found");
 
-  // user progress আনো
   const progress = await Progress.findOne({ user: userId });
   const memorizedWords = progress?.memorized || [];
   const attemptedQuestions = progress?.attemptedQuestions || [];
@@ -30,7 +28,6 @@ export const generateQuizService = async (
       "You have not memorized any words yet. Memorize some words first to take a quiz.",
     );
 
-  // এই category র active questions আনো
   const allQuestions = await QuestionModel.find({
     category: categoryId,
     isActive: true,
@@ -39,7 +36,6 @@ export const generateQuizService = async (
   if (!allQuestions.length)
     throw new CustomError(404, "No questions found for this category");
 
-  // memorized word match + already attempted বাদ দাও
   const memorizedStrs = memorizedWords.map((id) => id.toString());
   const attemptedStrs = attemptedQuestions.map((id) => id.toString());
 
@@ -56,7 +52,6 @@ export const generateQuizService = async (
       "You have attempted all available questions for your memorized words. Memorize more words to unlock new questions.",
     );
 
-  // Spaced Repetition — notebook এ wrong থাকা questions আগে
   const notebook = await NotebookModel.findOne({ user: userId });
   const wrongQuestionIds = new Set(
     (notebook?.entries || []).map((e) => e.question.toString()),
@@ -71,7 +66,6 @@ export const generateQuizService = async (
 
   const finalQuestions = [...wrongFirst, ...others].slice(0, questionCount);
 
-  // Quiz db তে save করো
   const quiz = await QuizModel.create({
     user: userId,
     category: categoryId,
@@ -80,7 +74,6 @@ export const generateQuizService = async (
     totalQuestions: finalQuestions.length,
   });
 
-  // correctAnswer hide করে পাঠাও
   const safeQuestions = finalQuestions.map((q) => ({
     _id: q._id,
     questionText: q.questionText,
@@ -97,7 +90,6 @@ export const generateQuizService = async (
   };
 };
 
-// ── Get User's Quiz History ───────────────────────────────
 export const getUserQuizHistoryService = async (userId: Types.ObjectId) => {
   const quizzes = await QuizModel.find({ user: userId })
     .populate("category", "name slug")
@@ -108,7 +100,6 @@ export const getUserQuizHistoryService = async (userId: Types.ObjectId) => {
   return quizzes;
 };
 
-// ── Get Single Quiz ───────────────────────────────────────
 export const getQuizByIdService = async (
   userId: Types.ObjectId,
   quizId: string,
@@ -125,7 +116,6 @@ export const getQuizByIdService = async (
   return quiz;
 };
 
-// ── Admin: Get All Quizzes ────────────────────────────────
 export const getAllQuizzesAdminService = async () => {
   return await QuizModel.find()
     .populate("user", "name email")
