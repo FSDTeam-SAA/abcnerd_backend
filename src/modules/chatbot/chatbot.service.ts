@@ -89,7 +89,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 };
 
@@ -189,7 +189,7 @@ const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $set: { isDeleted: true } },
-    { new: true }
+    { returnDocument: "after" }
   );
 };
 

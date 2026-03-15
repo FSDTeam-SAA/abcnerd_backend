@@ -115,7 +115,7 @@ export const getAllSubscriptionPlan = async (req: any) => {
 
 //: update single subscriptionplan by id
 const updateSubscriptionPlan = async (subscriptionplanId: string, data: Partial<ICreateSubscriptionPlan>) => {
-  const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, data, { new: true, runValidators: true });
+  const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, data, { returnDocument: "after", runValidators: true });
   if (!subscriptionplan) throw new CustomError(404, "SubscriptionPlan not found");
 
   return subscriptionplan;
@@ -123,7 +123,7 @@ const updateSubscriptionPlan = async (subscriptionplanId: string, data: Partial<
 
 //: delete single subscriptionplan by id (soft delete)
 const deleteSubscriptionPlan = async (subscriptionplanId: string) => {
-  const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, { isDeleted: true }, { new: true });
+  const subscriptionplan = await SubscriptionPlanModel.findOneAndUpdate({ _id: subscriptionplanId, isDeleted: false }, { isDeleted: true }, { returnDocument: "after" });
   if (!subscriptionplan) throw new CustomError(404, "SubscriptionPlan not found");
 };
 
