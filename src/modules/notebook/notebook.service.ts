@@ -51,7 +51,7 @@ export const deleteNotebookEntryService = async (
   const notebook = await NotebookModel.findOneAndUpdate(
     { user: userId },
     { $pull: { entries: { _id: new Types.ObjectId(entryId) } } },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   if (!notebook) throw new CustomError(404, "Notebook not found");
@@ -65,7 +65,7 @@ export const clearNotebookService = async (userId: Types.ObjectId) => {
   const notebook = await NotebookModel.findOneAndUpdate(
     { user: userId },
     { $set: { entries: [] } },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   if (!notebook) throw new CustomError(404, "Notebook not found");

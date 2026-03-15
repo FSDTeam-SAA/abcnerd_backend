@@ -121,7 +121,7 @@ export const wordActionService = async (
       $addToSet: { [action]: new Types.ObjectId(wordId) },
       $pull: { [oppositeField]: new Types.ObjectId(wordId) },
     },
-    { new: true, upsert: true },
+    { returnDocument: "after", upsert: true },
   );
 
   // ✅ Deduct balance for BOTH actions
@@ -196,7 +196,7 @@ export const wordActionService = async (
       lastActionDate: new Date(),
       nextVideoAt: shouldShowVideo,
     },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   return { progress, shouldShowVideo };

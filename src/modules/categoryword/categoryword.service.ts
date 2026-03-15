@@ -78,7 +78,7 @@ const getCategoryWordById = async (categorywordId: string) => {
 
 
 const updateCategoryWord = async (categorywordId: string, data: any) => {
-  const categoryWord = await CategoryWordModel.findByIdAndUpdate(categorywordId, data, { new: true });
+  const categoryWord = await CategoryWordModel.findByIdAndUpdate(categorywordId, data, { returnDocument: "after" });
   if (!categoryWord) throw new CustomError(400, "CategoryWord not found");
   return categoryWord;
 };

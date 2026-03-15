@@ -83,7 +83,7 @@ export const updateQuestionService = async (
   }
 
   const question = await QuestionModel.findByIdAndUpdate(questionId, payload, {
-    new: true,
+    returnDocument: "after",
     runValidators: true,
   });
 

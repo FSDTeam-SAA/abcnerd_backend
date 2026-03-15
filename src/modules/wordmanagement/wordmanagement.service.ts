@@ -117,7 +117,7 @@ const updateWordmanagement = async (wordmanagementId: string, data: any) => {
   const wordmanagement = await WordmanagementModel.findOneAndUpdate(
     { _id: wordmanagementId },
     data,
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (!wordmanagement) throw new CustomError(400, "Wordmanagement not found");
