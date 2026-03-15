@@ -29,6 +29,7 @@ const progressSchema = new Schema<IProgress>(
     lastActionDate: { type: Date, default: null },
     nextVideoAt: { type: Boolean, default: false },
     dailyStat: { type: dailyStatSchema, default: null },
+    latestLearningCategory: { type: [String], default: null },
   },
   { timestamps: true },
 );
