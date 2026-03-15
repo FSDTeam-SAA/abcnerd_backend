@@ -6,7 +6,7 @@ export const paginationHelper = (page?: string, limit?: string) => {
 
     return {
         page: currentPage,
-        limit: perPage,
+        limit: perPage > 100 ? 100 : perPage,
         skip,
     };
 };
