@@ -32,6 +32,8 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationOtp: string | null;
   verificationOtpExpire: Date | null;
+  //daily goal
+  dailyGoal: number;
   //auth provider
   provider: String;
   providerId: {

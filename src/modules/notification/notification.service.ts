@@ -53,7 +53,8 @@ const markAsRead = async (notificationId: string, userId: string) => {
 const deleteNotification = async (notificationId: string, userId: string) => {
   const notification = await NotificationModel.findOneAndDelete({ _id: notificationId, receiverId: userId }); //: check if notification belongs own
   if (!notification) throw new CustomError(404, "Notification not found");
-  await notification.save();
+  
+  return notification
 }
 
 //
