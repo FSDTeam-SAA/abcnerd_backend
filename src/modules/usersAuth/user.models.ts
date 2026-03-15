@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
 import { IUser, role, status, SubscriptionPlan, SubscriptionStatus } from "./user.interface";
+import { number } from "zod";
 
 const userSchema = new Schema<IUser>(
   {
@@ -53,6 +54,12 @@ const userSchema = new Schema<IUser>(
     verificationOtp: {
       type: String,
       required: false,
+    },
+    dailyGoal: {
+      type: Number,
+      required: false,
+      min: 5,
+      default: 20,
     },
     //!auth providers
     provider: {

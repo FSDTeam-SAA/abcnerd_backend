@@ -167,7 +167,7 @@ export const startBalanceResetCron = (): void => {
 
 //server pin in every 8 minutes
 export const startPingServerCron = (): void => {
-  const schedule = "*/8 * * * *"; // every 10 seconds
+  const schedule = "*/8 * * * *"; // every 8 minutes
 
   cron.schedule(
     schedule,
@@ -202,6 +202,6 @@ export const startPingServerCron = (): void => {
   );
 
   console.log(
-    chalk.magenta("[PingServer] Cron scheduled — runs every 10 seconds"),
+    chalk.magenta("[PingServer] Cron scheduled — runs every 8 minutes"),
   );
 };
