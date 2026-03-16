@@ -365,10 +365,17 @@ export const userService = {
     // Initialize Google OAuth client
     const client = new OAuth2Client(config.provider.googleClientId);
 
+    // Accept tokens from Web, iOS, and Android clients
+    const allowedAudiences = [
+      config.provider.googleClientId,
+      config.provider.googleIosClientId,
+      config.provider.googleAndroidClientId,
+    ].filter(Boolean) as string[];
+
     // Verify the token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: config.provider.googleClientId as string,
+      audience: allowedAudiences,
     });
 
     // Extract user information
@@ -429,15 +436,21 @@ export const userService = {
     }
 
     const kakaoUser: any = userResponse.data;
-    const email = kakaoUser.kakao_account?.email;
-    const name = kakaoUser.kakao_account?.profile?.nickname;
+    const kakaoId = kakaoUser.id?.toString();
+    const name = kakaoUser.kakao_account?.profile?.nickname || `kakao_${kakaoId}`;
     const profileImage = kakaoUser.kakao_account?.profile?.profile_image_url;
-    const kakaoId = kakaoUser.id;
+    // Kakao does not strictly guarantee an email address.
+    const email = kakaoUser.kakao_account?.email || `${kakaoId}@kakao.dummy.com`;
 
-    // Find or create user in your database
-    let user = await userModel.findOne({ email });
+    // 1. First, try to find the user strictly by their Kakao provider ID.
+    let user = await userModel.findOne({ providerId: kakaoId, provider: "kakao" });
 
-    // If user doesn't exist, create a new one
+    // 2. If not found by providerId, try to find by email (to link an existing local account, for example).
+    if (!user) {
+      user = await userModel.findOne({ email });
+    }
+
+    // If user still doesn't exist, create a new one matching the Schema requirements
     if (!user) {
       user = await userModel.create({
         email,

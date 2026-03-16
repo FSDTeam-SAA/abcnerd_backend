@@ -28,10 +28,11 @@ const config = {
     refreshTokenExpires: process.env.REFRESH_TOKEN_EXPIRES ?? "7d",
   },
   provider: {
-    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleClientId: process.env.GOOGLE_CLIENT_ID,           // Web Client ID (used by backend)
+    googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID,   // iOS Client ID (for Flutter iOS)
+    googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID, // Android Client ID (for Flutter Android)
     kakaoClientId: process.env.KAKAO_CLIENT_ID,
     kakaoRedirectUri: process.env.KAKAO_REDIRECT_URI,
-
     appleClientId: process.env.APPLE_CLIENT_ID,
   },
 
