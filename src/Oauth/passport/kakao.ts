@@ -6,9 +6,9 @@ import config from "../../config";
 passport.use(
     new KakaoStrategy(
         {
-            clientID: config.provider.kakaoClientId as string,      // REST API Key
+            clientID: config.provider.kakaoClientId as string,
             // clientSecret: config.provider.kakaoClientSecret, // optional
-            callbackURL: config.provider.kakaoRedirectUri as string,   // must match frontend redirect URI
+            callbackURL: config.provider.kakaoRedirectUri as string,
         },
         async (accessToken: string, _refreshToken: string, profile: any, done: (err: any, user?: any) => void) => {
             try {
