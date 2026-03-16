@@ -405,7 +405,7 @@ export const userService = {
     };
   },
 
-  //: login with kakao
+  //: login with google
   async loginWithKakao(code: string) {
     const params = new URLSearchParams({
       grant_type: "authorization_code",
@@ -467,6 +467,7 @@ export const userService = {
         isVerified: true,
       });
     }
+    console.log(user);
 
     // Generate access token and refresh token
     const jwtAccessToken = user.createAccessToken();
@@ -474,7 +475,7 @@ export const userService = {
     user.refreshToken = jwtRefreshToken;
     await user.save();
 
-    return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
+    return { email: user.email, name: user.name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
   },
 
   //: login with apple
