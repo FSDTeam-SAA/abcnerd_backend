@@ -244,8 +244,8 @@ export const kakaoLoginPage = (req: Request, res: Response) => {
 
   <script>
     const KAKAO_CLIENT_ID = "${process.env.KAKAO_CLIENT_ID}";
-    const REDIRECT_URI = window.location.origin + "/auth/kakao-test";
-    const BACKEND_URL = "/auth/kakao-login";
+    const REDIRECT_URI = window.location.origin + "/kakao-test";
+    const BACKEND_URL = "/api/v1/auth/user/login-with-kakao";
 
     Kakao.init(KAKAO_CLIENT_ID);
 

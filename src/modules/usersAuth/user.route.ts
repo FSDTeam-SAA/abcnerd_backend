@@ -44,11 +44,11 @@ router.post(
 
 router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
 
-router.get("/get-all-user", authGuard, allowRole("admin"),getalluser);
+router.get("/get-all-user", authGuard as any, allowRole("admin") as any, getalluser);
 
-router.get("/get-single-user/:userId", authGuard, getSingleUser);
+router.get("/get-single-user/:userId", authGuard as any, getSingleUser);
 
-router.get("/get-my-profile", authGuard, getmyprofile);
+router.get("/get-my-profile", authGuard as any, getmyprofile);
 
 router.patch(
   "/update-user",
@@ -60,8 +60,8 @@ router.patch(
 
 router.patch(
   "/update-status/:userId",
-  authGuard,
-  allowRole("admin"),
+  authGuard as any,
+  allowRole("admin") as any,
   validateRequest(updateStatusSchema),
   updateStatus,
 );
@@ -69,12 +69,12 @@ router.patch(
 router.patch(
   "/update-password",
   rateLimiter(1, 5),
-  authGuard,
+  authGuard as any,
   validateRequest(updatePasswordSchema),
   updatePassword,
 );
 
-router.post("/logout", authGuard, logout);
+router.post("/logout", authGuard as any, logout);
 
 router.post(
   "/forget-password",
