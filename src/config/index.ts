@@ -32,6 +32,7 @@ const config = {
     googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID,   // iOS Client ID (for Flutter iOS)
     googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID, // Android Client ID (for Flutter Android)
     kakaoClientId: process.env.KAKAO_CLIENT_ID,
+    kakaoClientSecret: process.env.KAKAO_CLIENT_SECRET,
     kakaoRedirectUri: process.env.KAKAO_REDIRECT_URI,
     appleClientId: process.env.APPLE_CLIENT_ID,
   },

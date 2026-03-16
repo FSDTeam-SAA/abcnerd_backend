@@ -405,18 +405,24 @@ export const userService = {
     };
   },
 
-  //: login with google
+  //: login with kakao
   async loginWithKakao(code: string) {
+    const params = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: config.provider.kakaoClientId as string,
+      redirect_uri: config.provider.kakaoRedirectUri as string,
+      code,
+    });
+
+    // Include client_secret if configured
+    if (config.provider.kakaoClientSecret) {
+      params.append("client_secret", config.provider.kakaoClientSecret);
+    }
+
     const tokenResponse = await axios.post(
       "https://kauth.kakao.com/oauth/token",
-      null,
+      params.toString(),
       {
-        params: {
-          grant_type: "authorization_code",
-          client_id: config.provider.kakaoClientId,
-          redirect_uri: config.provider.kakaoRedirectUri,
-          code,
-        },
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
     );
