@@ -46,13 +46,13 @@ const dailyChatHistorySchema = new Schema<IDailyChatHistory>(
 // One doc per day per authenticated user
 dailyChatHistorySchema.index(
     { userId: 1, dayKey: 1 },
-    { unique: true, sparse: true }
+    { unique: true, partialFilterExpression: { userId: { $exists: true } } }
 );
 
 // One doc per day per guest session
 dailyChatHistorySchema.index(
     { sessionId: 1, dayKey: 1 },
-    { unique: true, sparse: true }
+    { unique: true, partialFilterExpression: { sessionId: { $exists: true } } }
 );
 
 export const DailyChatHistoryModel = mongoose.model<IDailyChatHistory>(
