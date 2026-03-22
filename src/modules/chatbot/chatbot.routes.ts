@@ -13,13 +13,13 @@ import { authGuard } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 
-//Chatbot routes
-router.post("/message",authGuard, validateRequest(chatMessageSchema), chat);
-router.post("/message/history", authGuard, validateRequest(chatMessageSchema), chatWithHistory);
+// Chatbot routes
+router.post("/message", authGuard as any, validateRequest(chatMessageSchema), chat);
+router.post("/message/history", authGuard as any, validateRequest(chatMessageSchema), chatWithHistory);
 
 // Get chat history for the authenticated user
-router.get("/history", authGuard, getHistory);
-router.get("/history/:dayKey", authGuard, getHistoryByDay);
-router.delete("/history/:dayKey", authGuard, deleteHistoryByDay);
+router.get("/history", authGuard as any, getHistory);
+router.get("/history/:dayKey", authGuard as any, getHistoryByDay);
+router.delete("/history/:dayKey", authGuard as any, deleteHistoryByDay);
 
 export const chatbotRoute = router;
