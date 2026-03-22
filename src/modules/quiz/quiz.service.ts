@@ -79,6 +79,7 @@ export const generateQuizService = async (
     _id: q._id,
     questionText: q.questionText,
     options: q.options,
+    correctAnswer: q.correctAnswer,
     wordRef: q.wordRef,
   }));
 
