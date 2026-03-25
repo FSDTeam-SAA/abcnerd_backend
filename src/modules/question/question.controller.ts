@@ -1,4 +1,5 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
+
 import {
   createQuestionService,
   getAllQuestionsService,
@@ -7,104 +8,81 @@ import {
   deleteQuestionService,
   toggleQuestionStatusService,
 } from "./question.service";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
-export const createQuestion = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const createQuestion = asyncHandler(
+  async (req: Request, res: Response) => {
     const question = await createQuestionService(req.body);
-    res.status(201).json({
-      success: true,
-      message: "Question created successfully",
-      data: question,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+    ApiResponse.sendSuccess(
+      res,
+      201,
+      "Question created successfully",
+      question,
+    );
+  },
+);
 
-export const getAllQuestions = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getAllQuestions = asyncHandler(
+  async (req: Request, res: Response) => {
     const { categoryId } = req.query;
     const questions = await getAllQuestionsService(categoryId as string);
-    res.status(200).json({
-      success: true,
-      total: questions.length,
-      data: questions,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
-
-export const getQuestionById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const question = await getQuestionByIdService(req.params.id as string);
-    res.status(200).json({ success: true, data: question });
-  } catch (err) {
-    next(err as Error);
-  }
-};
-
-export const updateQuestion = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const question = await updateQuestionService(
-      req.params.id as string,
-      req.body,
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Questions fetched successfully",
+      questions,
     );
-    res.status(200).json({
-      success: true,
-      message: "Question updated successfully",
-      data: question,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+  },
+);
 
-export const deleteQuestion = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    await deleteQuestionService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: "Question deleted successfully",
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+export const getQuestionById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    if (!id) throw new Error("Question ID not found in params");
+    const question = await getQuestionByIdService(id);
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Question fetched successfully",
+      question,
+    );
+  },
+);
 
-export const toggleQuestionStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const question = await toggleQuestionStatusService(req.params.id as string);
-    res.status(200).json({
-      success: true,
-      message: `Question ${question.isActive ? "activated" : "deactivated"} successfully`,
-      data: question,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+export const updateQuestion = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    if (!id) throw new Error("Question ID not found in params");
+    const question = await updateQuestionService(id, req.body);
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Question updated successfully",
+      question,
+    );
+  },
+);
+
+export const deleteQuestion = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    if (!id) throw new Error("Question ID not found in params");
+    await deleteQuestionService(id);
+    ApiResponse.sendSuccess(res, 200, "Question deleted successfully");
+  },
+);
+
+export const toggleQuestionStatus = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    if (!id) throw new Error("Question ID not found in params");
+    const question = await toggleQuestionStatusService(id);
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      `Question ${question.isActive ? "activated" : "deactivated"} successfully`,
+      question,
+    );
+  },
+);

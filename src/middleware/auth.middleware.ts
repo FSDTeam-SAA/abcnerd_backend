@@ -24,7 +24,7 @@ export const authGuard = async (
 ): Promise<void> => {
   try {
     const accessToken =
-      // req.cookies?.accessToken ||
+      req.cookies?.accessToken ||
       req.headers?.authorization?.split("Bearer ")[1];
 
     if (!accessToken) {
