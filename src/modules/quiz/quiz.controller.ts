@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import {
   generateQuizService,
   getUserQuizHistoryService,
@@ -7,15 +7,11 @@ import {
   retakeQuizService,
 } from "./quiz.service";
 import { Types } from "mongoose";
-import { asyncHandler } from "../../utils/asyncHandler";
 import ApiResponse from "../../utils/apiResponse";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const generateQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const generateQuiz = asyncHandler(
+  async (req: Request, res: Response) => {
     const userId = req.user?._id;
     const { categoryId, questionCount } = req.query;
 
@@ -25,71 +21,54 @@ export const generateQuiz = async (
       questionCount ? Number(questionCount) : 10,
     );
 
-    res.status(201).json({ success: true, data: quiz });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+    ApiResponse.sendSuccess(res, 201, "Quiz generated successfully", quiz);
+  },
+);
 
-export const getUserQuizHistory = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getUserQuizHistory = asyncHandler(
+  async (req: Request, res: Response) => {
     const quizzes = await getUserQuizHistoryService(
       req.user?._id as Types.ObjectId,
     );
-    res.status(200).json({
-      success: true,
-      total: quizzes.length,
-      data: quizzes,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
-
-export const getQuizById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const quiz = await getQuizByIdService(
-      req.user?._id as Types.ObjectId,
-      req.params.quizId as string,
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Quiz history fetched successfully",
+      quizzes,
     );
-    res.status(200).json({ success: true, data: quiz });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+  },
+);
 
-export const getAllQuizzesAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getQuizById = asyncHandler(async (req: Request, res: Response) => {
+  const quizId = req.params.quizId as string;
+  if (!quizId) throw new Error("Quiz ID not found in params");
+
+  const quiz = await getQuizByIdService(
+    req.user?._id as Types.ObjectId,
+    quizId,
+  );
+  ApiResponse.sendSuccess(res, 200, "Quiz fetched successfully", quiz);
+});
+
+export const getAllQuizzesAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const quizzes = await getAllQuizzesAdminService();
-    res.status(200).json({
-      success: true,
-      total: quizzes.length,
-      data: quizzes,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "All quizzes fetched successfully",
+      quizzes,
+    );
+  },
+);
 
 export const retakeQuizController = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = (req as any).user._id;
-    const { quizId } = req.params;
+    const userId = req.user?._id;
+    const quizId = req.params.quizId as string;
+    if (!quizId) throw new Error("Quiz ID not found in params");
 
-    const result = await retakeQuizService(userId, quizId as string);
-
+    const result = await retakeQuizService(userId as Types.ObjectId, quizId);
     ApiResponse.sendSuccess(res, 200, "Quiz restarted successfully", result);
   },
 );
