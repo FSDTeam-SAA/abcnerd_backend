@@ -56,7 +56,7 @@ export const authGuard = async (
     }
 
     req.user = {
-      _id: user._id,
+      _id: user._id as string,
       email: user.email,
       role: user.role,
     };
