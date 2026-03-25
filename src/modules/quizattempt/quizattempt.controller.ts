@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import {
   submitQuizService,
   getAttemptHistoryService,
@@ -7,89 +7,71 @@ import {
   getAttemptsByQuizAdminService,
 } from "./quizattempt.service";
 import { Types } from "mongoose";
+import { asyncHandler } from "../../utils/asyncHandler";
+import ApiResponse from "../../utils/apiResponse";
 
-export const submitQuiz = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const result = await submitQuizService(
-      req.user?._id as Types.ObjectId,
-      req.params.quizId as string,
-      req.body.answers,
-    );
-    res.status(200).json({
-      success: true,
-      message: "Quiz submitted successfully",
-      data: result,
-    });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+export const submitQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const quizId = req.params.quizId as string;
+  if (!quizId) throw new Error("Quiz ID not found in params");
 
-export const getAttemptHistory = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+  const result = await submitQuizService(
+    req.user?._id as Types.ObjectId,
+    quizId,
+    req.body.answers,
+  );
+  ApiResponse.sendSuccess(res, 200, "Quiz submitted successfully", result);
+});
+
+export const getAttemptHistory = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempts = await getAttemptHistoryService(
       req.user?._id as Types.ObjectId,
     );
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Attempt history fetched successfully",
+      attempts,
+    );
+  },
+);
 
-export const getAttemptById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getAttemptById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const attemptId = req.params.attemptId as string;
+    if (!attemptId) throw new Error("Attempt ID not found in params");
+
     const attempt = await getAttemptByIdService(
       req.user?._id as Types.ObjectId,
-      req.params.attemptId as string,
+      attemptId,
     );
-    res.status(200).json({ success: true, data: attempt });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+    ApiResponse.sendSuccess(res, 200, "Attempt fetched successfully", attempt);
+  },
+);
 
-export const getAllAttemptsAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+export const getAllAttemptsAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
     const attempts = await getAllAttemptsAdminService();
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
-
-export const getAttemptsByQuizAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const attempts = await getAttemptsByQuizAdminService(
-      req.params.quizId as string,
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "All attempts fetched successfully",
+      attempts,
     );
-    res
-      .status(200)
-      .json({ success: true, total: attempts.length, data: attempts });
-  } catch (err) {
-    next(err as Error);
-  }
-};
+  },
+);
+
+export const getAttemptsByQuizAdmin = asyncHandler(
+  async (req: Request, res: Response) => {
+    const quizId = req.params.quizId as string;
+    if (!quizId) throw new Error("Quiz ID not found in params");
+
+    const attempts = await getAttemptsByQuizAdminService(quizId);
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Quiz attempts fetched successfully",
+      attempts,
+    );
+  },
+);
