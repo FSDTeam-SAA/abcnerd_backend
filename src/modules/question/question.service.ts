@@ -4,6 +4,7 @@ import CustomError from "../../helpers/CustomError";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 import { QuestionModel } from "./question.models";
+import { paginationHelper } from "../../utils/pagination";
 
 // ── Create Question ───────────────────────────────────────
 export const createQuestionService = async (payload: any) => {
@@ -25,7 +26,18 @@ export const createQuestionService = async (payload: any) => {
 };
 
 // ── Get All Questions (Admin) ─────────────────────────────
-export const getAllQuestionsService = async (categoryId?: string) => {
+export const getAllQuestionsService = async (req: any) => {
+  const {
+    categoryId,
+    page: pageBody,
+    limit: limitBody,
+    sortBy = "desc",
+  } = req.query;
+
+  // Pagination
+  const { page, limit, skip } = paginationHelper(pageBody, limitBody);
+
+  // Filter
   const filter: any = {};
   if (categoryId) {
     if (!Types.ObjectId.isValid(categoryId))
@@ -33,13 +45,38 @@ export const getAllQuestionsService = async (categoryId?: string) => {
     filter.category = categoryId;
   }
 
+  // Validate sortBy
+  const allowedSort = ["asc", "desc"];
+  if (!allowedSort.includes(sortBy)) {
+    throw new CustomError(
+      400,
+      "Invalid sortBy, allowed values are 'asc' and 'desc'",
+    );
+  }
+
+  const sort: any = sortBy === "asc" ? { createdAt: 1 } : { createdAt: -1 };
+
+  // Fetch data
   const questions = await QuestionModel.find(filter)
     .populate("category", "name slug")
     .populate("wordRef", "word description")
-    .sort({ createdAt: -1 });
+    .skip(skip)
+    .limit(limit)
+    .sort(sort);
 
   if (!questions.length) throw new CustomError(404, "No questions found");
-  return questions;
+
+  const total = await QuestionModel.countDocuments(filter);
+
+  return {
+    questions,
+    meta: {
+      page,
+      limit,
+      totalQuestions: total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 // ── Get Single Question ───────────────────────────────────

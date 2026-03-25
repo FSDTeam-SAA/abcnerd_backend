@@ -25,14 +25,8 @@ export const createQuestion = asyncHandler(
 
 export const getAllQuestions = asyncHandler(
   async (req: Request, res: Response) => {
-    const { categoryId } = req.query;
-    const questions = await getAllQuestionsService(categoryId as string);
-    ApiResponse.sendSuccess(
-      res,
-      200,
-      "Questions fetched successfully",
-      questions,
-    );
+    const result = await getAllQuestionsService(req);
+    ApiResponse.sendSuccess(res, 200, "Questions fetched successfully", result);
   },
 );
 
