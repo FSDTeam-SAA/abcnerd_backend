@@ -15,6 +15,7 @@ import { invoiceRoute } from "../modules/invoice/invoice.routes";
 import notebookRoute from "../modules/notebook/notebook.routes";
 import { chatbotRoute } from "../modules/chatbot/chatbot.routes";
 import questionRoute from "../modules/question/question.routes";
+import leaderboardRoute from "../modules/leaderboard/leaderboard.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -32,5 +33,6 @@ router.use("/Quiz", quizRoute);
 router.use("/quiz-attempt", quizattemptRoute);
 router.use("/question", questionRoute);
 router.use("/notebook", notebookRoute);
+router.use("/leaderboard", leaderboardRoute);
 
 export default router;
