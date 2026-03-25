@@ -20,9 +20,16 @@ export interface IDashboardStats {
   totalQuestions: number;
 }
 
+export interface IPerformanceTrendPoint {
+  label: string;
+  currentYear: number;
+  lastYear: number;
+}
+
 export interface ILeaderboardResponse {
   leaderboard: ILeaderboardEntry[];
   stats: IDashboardStats;
+  performanceTrend: IPerformanceTrendPoint[];
   total: number;
   page: number;
   limit: number;
