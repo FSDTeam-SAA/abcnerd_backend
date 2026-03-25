@@ -111,7 +111,7 @@ export const googleLogin = (req: Request, res: Response) => {
 
   <script>
     const GOOGLE_CLIENT_ID = "626050572372-ocuj8p7q304p0gno6v7h5lvjoiv33no9.apps.googleusercontent.com";
-    const BACKEND_URL = "/auth/google-login";
+    const BACKEND_URL = "/api/v1/user/login-with-google";
 
     function handleCredentialResponse(response) {
       const token = response.credential;
@@ -244,8 +244,8 @@ export const kakaoLoginPage = (req: Request, res: Response) => {
 
   <script>
     const KAKAO_CLIENT_ID = "${process.env.KAKAO_CLIENT_ID}";
-    const REDIRECT_URI = window.location.origin + "/auth/kakao-test";
-    const BACKEND_URL = "/auth/kakao-login";
+    const REDIRECT_URI = window.location.origin + "/kakao-test";
+    const BACKEND_URL = "/api/v1/user/login-with-kakao";
 
     Kakao.init(KAKAO_CLIENT_ID);
 

@@ -19,6 +19,14 @@ export const connectDatabase = async (): Promise<void> => {
 
     const dbinfo = await mongoose.connect(mongoUrl);
 
+    // ✅ Temporary: Drop old conflicting indexes for chathistory (can be removed after one successful run)
+    try {
+      await mongoose.connection.db?.collection('dailychathistories').dropIndexes();
+      console.log(chalk.blue("DailyChatHistory indexes dropped successfully."));
+    } catch (e) {
+      console.log(chalk.gray("No indexes found to drop or already dropped."));
+    }
+
     console.log(
       chalk.yellow(`Database connection successful: ${dbinfo.connection.host}`),
     );

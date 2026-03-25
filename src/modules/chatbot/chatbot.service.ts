@@ -1,10 +1,11 @@
 // chatbot.service.ts
 import { GoogleGenAI } from "@google/genai";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
 import type { ChatHistory, IChatIdentity, IChatResponse } from "./chatbot.interface";
 import { DailyChatHistoryModel } from "./chatbot.models";
+import { Progress } from "../progress/progress.models";
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
@@ -16,7 +17,25 @@ Rules:
 - Reply ONLY in English.
 - Be concise, friendly, and accurate.
 - If user asks meaning + examples, respond with short meaning + real-life usage examples.
+- You have access to the user's learned vocabulary. Use these words in your examples or conversation when relevant to help reinforce learning.
 `;
+
+const getUserVocabularyContext = async (userId?: string): Promise<string> => {
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) return "";
+  try {
+    const progress = await Progress.findOne({ user: new mongoose.Types.ObjectId(userId) }).populate({
+      path: "memorized",
+      select: "word",
+      options: { limit: 50, sort: { createdAt: -1 } }
+    });
+    if (!progress || !progress.memorized || (progress.memorized as any[]).length === 0) return "";
+    const words = (progress.memorized as any[]).map(w => w.word).filter(Boolean).join(", ");
+    return words ? `\nUser's Learned Vocabulary (use these when relevant): ${words}` : "";
+  } catch (err) {
+    console.error("Error fetching user vocabulary context:", err);
+    return "";
+  }
+};
 
 const MODEL = "gemini-2.5-flash";
 const MAX_OUTPUT_TOKENS = 2048;
@@ -89,7 +108,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 };
 
@@ -102,12 +121,13 @@ const chat = async (
 
   const dayDoc = await getOrCreateDayDoc(identity);
 
+  const vocabContext = await getUserVocabularyContext(identity.userId);
   const aiResponse = await handleGeminiError(async () => {
     const response = await ai.models.generateContent({
       model: MODEL,
       contents: message,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       },
@@ -137,6 +157,7 @@ const chatWithHistory = async (
   const dayDoc = await getOrCreateDayDoc(identity);
   const trimmedHistory = trimHistoryByChars(dayDoc.messages as ChatHistory);
 
+  const vocabContext = await getUserVocabularyContext(identity.userId);
   const aiResponse = await handleGeminiError(async () => {
     const contents = [
       ...trimmedHistory.map((msg) => ({
@@ -150,7 +171,7 @@ const chatWithHistory = async (
       model: MODEL,
       contents,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       },
@@ -189,7 +210,7 @@ const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $set: { isDeleted: true } },
-    { new: true }
+    { returnDocument: "after" }
   );
 };
 
