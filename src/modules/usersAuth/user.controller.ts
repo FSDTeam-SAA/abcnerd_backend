@@ -48,6 +48,7 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   ApiResponse.sendSuccess(res, 200, "Logged in", {
+    _id: user._id,
     email: user.email,
     name: user.name,
     role: user.role,
