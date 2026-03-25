@@ -38,17 +38,16 @@ export const getAttemptHistory = asyncHandler(
 
 export const getAttemptById = asyncHandler(
   async (req: Request, res: Response) => {
-    const attemptId = req.params.attemptId as string;
-    if (!attemptId) throw new Error("Attempt ID not found in params");
+    const quizId = req.params.quizId as string;
+    if (!quizId) throw new Error("Quiz ID not found in params");
 
     const attempt = await getAttemptByIdService(
       req.user?._id as Types.ObjectId,
-      attemptId,
+      quizId,
     );
     ApiResponse.sendSuccess(res, 200, "Attempt fetched successfully", attempt);
   },
 );
-
 export const getAllAttemptsAdmin = asyncHandler(
   async (req: Request, res: Response) => {
     const attempts = await getAllAttemptsAdminService();

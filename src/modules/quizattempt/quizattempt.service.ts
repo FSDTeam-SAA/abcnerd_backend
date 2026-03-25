@@ -140,15 +140,16 @@ export const getAttemptHistoryService = async (userId: Types.ObjectId) => {
 // ── Get Single Attempt ────────────────────────────────────
 export const getAttemptByIdService = async (
   userId: Types.ObjectId,
-  attemptId: string,
+  quizId: string,
 ) => {
-  if (!Types.ObjectId.isValid(attemptId))
-    throw new CustomError(400, "Invalid attempt id");
+  if (!Types.ObjectId.isValid(quizId))
+    throw new CustomError(400, "Invalid quiz id");
 
   const attempt = await QuizAttemptModel.findOne({
-    _id: attemptId,
     user: userId,
+    quiz: quizId,
   })
+    .populate("user", "name email")
     .populate("quiz", "category totalQuestions")
     .populate("answeredQuestions.wordRef", "word description synonyms");
 

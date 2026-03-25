@@ -7,6 +7,7 @@ import { QuestionModel } from "../question/question.models";
 import { NotebookModel } from "../notebook/notebook.models";
 import { QuizModel } from "./quiz.models";
 import { QuizAttemptModel } from "../quizattempt/quizattempt.models";
+import { paginationHelper } from "../../utils/pagination";
 
 export const generateQuizService = async (
   userId: Types.ObjectId,
@@ -118,12 +119,44 @@ export const getQuizByIdService = async (
   return quiz;
 };
 
-export const getAllQuizzesAdminService = async () => {
-  return await QuizModel.find()
+export const getAllQuizzesAdminService = async (req: any) => {
+  const { page: pageBody, limit: limitBody, sortBy = "desc" } = req.query;
+
+  // Pagination
+  const { page, limit, skip } = paginationHelper(pageBody, limitBody);
+
+  // Validate sortBy
+  const allowedSort = ["asc", "desc"];
+  if (!allowedSort.includes(sortBy)) {
+    throw new CustomError(
+      400,
+      "Invalid sortBy, allowed values are 'asc' and 'desc'",
+    );
+  }
+
+  const sort: any = sortBy === "asc" ? { createdAt: 1 } : { createdAt: -1 };
+
+  const quizzes = await QuizModel.find()
     .populate("user", "name email")
     .populate("category", "name slug")
     .populate("attempt")
-    .sort({ createdAt: -1 });
+    .skip(skip)
+    .limit(limit)
+    .sort(sort);
+
+  if (!quizzes.length) throw new CustomError(404, "No quizzes found");
+
+  const total = await QuizModel.countDocuments();
+
+  return {
+    quizzes,
+    meta: {
+      page,
+      limit,
+      totalQuizzes: total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 export const retakeQuizService = async (

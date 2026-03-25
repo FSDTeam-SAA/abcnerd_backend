@@ -52,12 +52,12 @@ export const getQuizById = asyncHandler(async (req: Request, res: Response) => {
 
 export const getAllQuizzesAdmin = asyncHandler(
   async (req: Request, res: Response) => {
-    const quizzes = await getAllQuizzesAdminService();
+    const result = await getAllQuizzesAdminService(req);
     ApiResponse.sendSuccess(
       res,
       200,
       "All quizzes fetched successfully",
-      quizzes,
+      result,
     );
   },
 );
