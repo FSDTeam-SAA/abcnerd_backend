@@ -83,6 +83,8 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     email: result.email,
     name: result.name,
     // image: result.profileImage,
+    city: result.city,
+    country: result.country,
     profileImage: result.profileImage,
     dailyGoal: result.dailyGoal
   });

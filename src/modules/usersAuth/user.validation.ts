@@ -53,6 +53,8 @@ export const updateUserSchema = z
       .string()
       .max(100, "Self introduction cannot be longer than 100 characters")
       .optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
     status: z.enum(Object.values(status) as [string, ...string[]]).optional(),
     dailyGoal: z
       .coerce.number()

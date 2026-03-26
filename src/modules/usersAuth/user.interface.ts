@@ -26,7 +26,8 @@ export interface IUser extends Document {
   };
   status: status;
   selfIntroduction: string;
-  addressIds?: string[];
+  city: string;
+  country: string;
   passwordResetToken: string;
   passwordResetExpire: Date | null;
   isVerified: boolean;
