@@ -74,10 +74,11 @@ export const userService = {
     const isPasswordMatch = await bcryptjs.compare(password, user.password);
     if (!isPasswordMatch) throw new CustomError(400, "incorrect password");
 
+    user.rememberMe = rememberMe;
+
     const accessToken = user.createAccessToken();
     const refreshToken = user.createRefreshToken();
 
-    user.rememberMe = rememberMe;
     user.refreshToken = refreshToken;
     await user.save();
 

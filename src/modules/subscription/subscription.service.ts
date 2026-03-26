@@ -274,6 +274,7 @@ export const successPayment = async (sessionId: string) => {
   subscription.currentPeriodStart = new Date();
 
   const interval =
+    (subscription as any).planId?.interval ||
     (subscription as any).interval ||
     (subscription as any).billingInterval ||
     "month";
@@ -579,7 +580,7 @@ export const handleStripeWebhook = async (req: any) => {
         isDeleted: false,
         status: { $in: ["pending", "active"] },
       })
-        .populate("planId", "title price currency credits")
+        .populate("planId", "title price currency interval credits")
         .exec();
 
       if (!sub) {
@@ -596,8 +597,14 @@ export const handleStripeWebhook = async (req: any) => {
       // ── Activate subscription document ─────────────────────────────────────
       sub.status = "active";
       sub.currentPeriodStart = new Date();
+      const interval =
+        (sub as any).planId?.interval ||
+        (sub as any).interval ||
+        (sub as any).billingInterval ||
+        "month";
+
       sub.currentPeriodEnd =
-        (sub as any).interval === "year"
+        interval === "year"
           ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
           : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
       (sub as any).stripePaymentIntentId = pi.id;

@@ -219,8 +219,8 @@ userSchema.methods.createAccessToken = function () {
     config.jwt.accessTokenSecret as string,
     {
       expiresIn: this.rememberMe
-        ? (config.jwt.accessTokenExpires as any)
-        : "1d",
+        ? "1d"
+        : (config.jwt.accessTokenExpires as any),
     },
   );
 };
