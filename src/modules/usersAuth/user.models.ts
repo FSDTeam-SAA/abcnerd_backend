@@ -71,6 +71,16 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: false,
     },
+    city: {
+      type: String,
+      trim: true,
+    },
+    country: {
+      type: String,
+      trim: true,
+    },
+
+    // balance block
     balance: {
       wordSwipe: {
         type: Number,

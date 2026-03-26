@@ -187,6 +187,7 @@ export const userService = {
     const data: UpdateUserPayload = req.body;
     const { email, role } = req?.user as { email: string; role: string };
     const image = req?.file as Express.Multer.File;
+    
 
     // status handleing for user and admin
     if (data.status) {
