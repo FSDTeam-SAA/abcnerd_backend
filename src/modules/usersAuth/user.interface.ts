@@ -92,6 +92,7 @@ export enum SubscriptionPlan {
   BASIC = "Basic",
   PRO = "Pro",
   PREMIUM = "Premium",
+  UNLIMITED = "Unlimited",
 }
 
 export enum SubscriptionStatus {
