@@ -54,10 +54,12 @@ const subscriptionplanSchema = new Schema<ISubscriptionPlan>(
       wordSwipe: {
         type: Number,
         default: 0,
+        min: -1,
       },
       aiChat: {
         type: Number,
         default: 0,
+        min: -1,
       },
     },
 

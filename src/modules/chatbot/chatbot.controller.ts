@@ -13,8 +13,8 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
 
   const { _id: userId } = req.user as any;
   const user = await userModel.findById(userId).select("balance");
-  //check if user has enough balance to chat
-  if (user && user.balance.aiChat <= 0) {
+  //check if user has enough balance to chat (allow -1 for unlimited)
+  if (user && user.balance.aiChat !== -1 && user.balance.aiChat <= 0) {
     return ApiResponse.sendError(res, 403, "You reached your daily chat limit.");
   }
 
@@ -22,7 +22,8 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
 
   //decrease balance if user chatting successfully — costs more tokens
 
-  if (user) {
+  //decrease balance if user chatting successfully and not unlimited
+  if (user && user.balance.aiChat !== -1) {
     user.balance.aiChat -= 1; //decrease balance by 1 for each chat
     await user.save();
   }
@@ -33,9 +34,9 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
 export const chatWithHistory = asyncHandler(async (req: Request, res: Response) => {
   const { message } = req.body;
   const { _id: userId } = req.user as any;
-  //check if user has enough balance to chat
+  //check if user has enough balance to chat (allow -1 for unlimited)
   const user = await userModel.findById(userId)
-  if (user && user.balance.aiChat <= 0) {
+  if (user && user.balance.aiChat !== -1 && user.balance.aiChat <= 0) {
     return ApiResponse.sendError(res, 403, "You reached your daily chat limit.");
   }
 
@@ -43,7 +44,8 @@ export const chatWithHistory = asyncHandler(async (req: Request, res: Response) 
 
   //decrease balance if user chatting successfully — costs more tokens
 
-  if (user) {
+  //decrease balance if user chatting successfully and not unlimited
+  if (user && user.balance.aiChat !== -1) {
     user.balance.aiChat -= 1; //decrease balance by 1 for each chat
     await user.save();
   }

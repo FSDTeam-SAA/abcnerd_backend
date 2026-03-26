@@ -47,13 +47,21 @@ function buildUserActivationUpdate(
   };
 
   // Only update credit counts if the plan actually grants them
-  if (planDoc?.credits?.wordSwipe) {
-    set["balance.wordSwipe"] =
-      (currentBalance?.wordSwipe || 0) + (planDoc.credits.wordSwipe || 0);
+  if (planDoc?.credits?.wordSwipe !== undefined) {
+    if (planDoc.credits.wordSwipe === -1) {
+      set["balance.wordSwipe"] = -1;
+    } else {
+      const current = currentBalance?.wordSwipe === -1 ? 0 : (currentBalance?.wordSwipe || 0);
+      set["balance.wordSwipe"] = current + planDoc.credits.wordSwipe;
+    }
   }
-  if (planDoc?.credits?.aiChat) {
-    set["balance.aiChat"] =
-      (currentBalance?.aiChat || 0) + (planDoc.credits.aiChat || 0);
+  if (planDoc?.credits?.aiChat !== undefined) {
+    if (planDoc.credits.aiChat === -1) {
+      set["balance.aiChat"] = -1;
+    } else {
+      const current = currentBalance?.aiChat === -1 ? 0 : (currentBalance?.aiChat || 0);
+      set["balance.aiChat"] = current + planDoc.credits.aiChat;
+    }
   }
 
   return { $set: set };

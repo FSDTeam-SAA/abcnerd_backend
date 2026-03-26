@@ -85,12 +85,12 @@ const userSchema = new Schema<IUser>(
       wordSwipe: {
         type: Number,
         default: 10,
-        min: 0,
+        min: -1,
       },
       aiChat: {
         type: Number,
         default: 5,
-        min: 0,
+        min: -1,
       },
       validityDate: {
         type: Date,
