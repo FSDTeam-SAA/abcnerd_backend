@@ -111,6 +111,7 @@ export const PLAN_DAILY_LIMITS: Record<
   [SubscriptionPlan.BASIC]: { wordSwipe: 10, aiChat: 5 },
   [SubscriptionPlan.PRO]: { wordSwipe: 30, aiChat: 15 },
   [SubscriptionPlan.PREMIUM]: { wordSwipe: 100, aiChat: 50 },
+  [SubscriptionPlan.UNLIMITED]: { wordSwipe: Infinity, aiChat: Infinity },
 };
 
 // Extend your existing IUser interface with these fields
