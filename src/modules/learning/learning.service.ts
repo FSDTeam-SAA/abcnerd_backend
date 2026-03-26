@@ -1,4 +1,6 @@
 import { Types } from "mongoose";
+import { NotificationModel } from "../notification/notification.models";
+import { NotificationType } from "../notification/notification.interface";
 import CustomError from "../../helpers/CustomError";
 import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
@@ -168,6 +170,25 @@ export const wordActionService = async (
       },
     },
   );
+
+  // ── Goal Achieved Notification (Check if exactly equal to goal) ──
+  if (action === "memorized" && newSwipedCount === dailyGoal && dailyGoal > 0) {
+    try {
+      const notif = await NotificationModel.create({
+        receiverId: userId.toString(),
+        title: "Goal Achieved!",
+        description: "I achieved my goal for today! 🏆",
+        type: NotificationType.GOAL_ACHIEVED
+      });
+      // Try socket emit
+      try {
+        const { getIo } = await import("../../socket/server");
+        getIo().to(userId.toString()).emit("newNotification", notif);
+      } catch (e) {}
+    } catch (err) {
+      console.error("[Notification] Failed to create Goal Achieved notification", err);
+    }
+  }
 
   // ── Video + Score + Streak (শুধু memorized এর জন্য) ──
   if (action !== "memorized") {

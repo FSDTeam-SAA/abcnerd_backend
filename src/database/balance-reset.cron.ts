@@ -3,6 +3,8 @@ import { SubscriptionStatus } from "../modules/usersAuth/user.interface";
 import { userModel } from "../modules/usersAuth/user.models";
 import { SubscriptionModel } from "../modules/subscription/subscription.models";
 import chalk from "chalk";
+import { NotificationModel } from "../modules/notification/notification.models";
+import { NotificationType } from "../modules/notification/notification.interface";
 
 // Daily balance reset logic:
 const FREE_TIER = { wordSwipe: 10, aiChat: 5 } as const;
@@ -86,7 +88,7 @@ export const resetDailyBalances = async (): Promise<void> => {
       console.log(
         chalk.green(
           `[BalanceReset] userId=${sub.userId} | plan="${plan.title}" | ` +
-            `wordSwipe=${wordSwipe} aiChat=${aiChat}`,
+          `wordSwipe=${wordSwipe} aiChat=${aiChat}`,
         ),
       );
     }),
@@ -117,8 +119,8 @@ export const resetDailyBalances = async (): Promise<void> => {
   console.log(
     chalk.green(
       `[BalanceReset] Free tier | ` +
-        `Updated ${freeTierResult.modifiedCount} users | ` +
-        `wordSwipe=${FREE_TIER.wordSwipe} aiChat=${FREE_TIER.aiChat}`,
+      `Updated ${freeTierResult.modifiedCount} users | ` +
+      `wordSwipe=${FREE_TIER.wordSwipe} aiChat=${FREE_TIER.aiChat}`,
     ),
   );
 
@@ -135,6 +137,42 @@ export const resetDailyBalances = async (): Promise<void> => {
       ),
     );
   }
+
+  // ── Step 5: Expiration Reminders (7-day and 2-day) in Notification Tab ────────
+  const notifyExpiringSubscriptions = async (days: 7 | 2) => {
+    // We target the 24-hour window that lies exactly 'days' into the future
+    const minTime = new Date(now.getTime() + (days - 1) * 24 * 60 * 60 * 1000);
+    const maxTime = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const subsToNotify = await SubscriptionModel.find({
+      status: "active",
+      isDeleted: false,
+      currentPeriodEnd: { $gt: minTime, $lte: maxTime }
+    }).populate("userId", "name email").populate("planId", "title").exec();
+
+    for (const sub of subsToNotify) {
+      const user = sub.userId as any;
+      const plan = sub.planId as any;
+      if (!user) continue;
+      
+      try {
+        // Create In-App Notification (Database only)
+        await NotificationModel.create({
+          receiverId: user._id.toString(),
+          title: "Subscription Expiring Soon!",
+          description: `Your ${plan?.title || 'premium'} subscription is ending in ${days} days.`,
+          type: NotificationType.SUBSCRIPTION
+        });
+
+        console.log(chalk.green(`[BalanceReset] DB Notification (${days} days) created for ${user.email}`));
+      } catch (err) {
+        console.error(`[BalanceReset] Failed to notify sub ${sub._id}`, err);
+      }
+    }
+  };
+
+  await notifyExpiringSubscriptions(7);
+  await notifyExpiringSubscriptions(2);
 
   console.log(chalk.cyan(`[BalanceReset] Done.`));
 };
