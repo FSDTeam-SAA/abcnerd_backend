@@ -169,36 +169,59 @@ export const startBalanceResetCron = (): void => {
 export const startPingServerCron = (): void => {
   const schedule = "*/8 * * * *"; // every 8 minutes
 
+  const urls = [
+    "https://abcnerd-backend.onrender.com/api/v1/ping", // primary
+    "https://abcnerd-backend-v4we.onrender.com/api/v1/ping", // fallback
+  ];
+
   cron.schedule(
     schedule,
     async () => {
-      try {
-        console.log(
-          chalk.cyan(
-            `[PingServer] Sending request at ${new Date().toISOString()}`,
-          ),
-        );
+      console.log(
+        chalk.cyan(
+          `[PingServer] Start at ${new Date().toISOString()}`
+        )
+      );
 
-        const res = await fetch(
-          "https://abcnerd-backend.onrender.com/api/v1/ping",
-        );
+      let success = false;
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+      for (const url of urls) {
+        try {
+          console.log(chalk.yellow(`[PingServer] Trying ${url}`));
+
+          const res = await fetch(url);
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
+          const data = await res.json();
+
+          console.log(
+            chalk.green(
+              `[PingServer] Success | url=${url} | status=${res.status} | message=${data?.message ?? "ok"}`
+            )
+          );
+
+          success = true;
+          break; // ✅ stop after first success
+        } catch (err) {
+          console.error(
+            chalk.red(`[PingServer] Failed | url=${url}`),
+            err
+          );
         }
+      }
 
-        const data = await res.json();
-
-        console.log(
-          chalk.green(
-            `[PingServer] Success | status=${res.status} | message=${data?.message ?? "ok"}`,
-          ),
+      if (!success) {
+        console.error(
+          chalk.bgRed.white(
+            `[PingServer] All endpoints failed!`
+          )
         );
-      } catch (err) {
-        console.error(chalk.red("[PingServer] Request failed:"), err);
       }
     },
-    { timezone: "UTC" },
+    { timezone: "UTC" }
   );
 
   console.log(
