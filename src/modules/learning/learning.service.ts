@@ -89,14 +89,12 @@ export const wordActionService = async (
   const userProgress = await Progress.findOne({ user: userId });
 
   const user = await userModel
-    .findById({
-      _id: userId,
-      balance: {
-        wordSwipe: { $gt: 0 },
-      },
-    })
+    .findById(userId)
     .select("email balance");
-  if (user?.balance?.wordSwipe === 0)
+
+  if (!user) throw new CustomError(404, "User not found");
+
+  if (user.balance.wordSwipe !== -1 && user.balance.wordSwipe <= 0)
     throw new CustomError(400, "your limit is over");
 
   if (
@@ -124,9 +122,11 @@ export const wordActionService = async (
     { returnDocument: "after", upsert: true },
   );
 
-  // ✅ Deduct balance for BOTH actions
-  user!.balance.wordSwipe = user!.balance.wordSwipe - 1;
-  await user!.save();
+  // ✅ Deduct balance for BOTH actions (if not unlimited)
+  if (user.balance.wordSwipe !== -1) {
+    user.balance.wordSwipe = user.balance.wordSwipe - 1;
+    await user.save();
+  }
 
   // ── Daily Stat Update (memorized + reviewLater উভয়ের জন্য) ──
   const today = new Date();
