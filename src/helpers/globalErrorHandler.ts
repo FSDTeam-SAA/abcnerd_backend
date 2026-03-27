@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import CustomError from "./CustomError";
 
 const developmentError = (error: CustomError, res: Response): Response => {
@@ -35,7 +36,11 @@ export const globalErrorHandler = (
     ? error
     : new CustomError(500, error.message);
 
-  if (error.name === "ValidationError") {
+  if (error instanceof jwt.TokenExpiredError) {
+    err = new CustomError(401, "Access token has expired. Please login again.");
+  } else if (error instanceof jwt.JsonWebTokenError) {
+    err = new CustomError(401, "Invalid access token. Please login again.");
+  } else if (error.name === "ValidationError") {
     const validationErrors = Object.values((error as mongoose.Error.ValidationError).errors).map((el: any) => ({
       field: el.path,
       message: el.message,
