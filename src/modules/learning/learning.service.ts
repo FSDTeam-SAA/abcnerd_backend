@@ -227,7 +227,7 @@ export const wordActionService = async (
       description,
       count: reviewCount,
     });
-    io.to(userId.toString()).emit("newNotification", notif);
+    io.to(userId.toString()).emit("notification:new", notif);
   }
 
   if (action !== "memorized") {

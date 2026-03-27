@@ -21,15 +21,11 @@ export const notifyAllUsers = async (title: string, description: string, type: N
     await NotificationModel.insertMany(notifications);
 
     users.forEach((user: any) => {
+      // Emit only notification:new — the frontend generalNotificationStream handles all types
       io.to(String(user._id)).emit("notification:new", {
         title,
         description,
         type,
-      });
-      // Generic listener
-      io.to(String(user._id)).emit("quiz:updated", {
-        message: title,
-        description,
       });
     });
 
@@ -38,3 +34,4 @@ export const notifyAllUsers = async (title: string, description: string, type: N
     console.error("[Notification Error] Failed to notify all users:", error);
   }
 };
+

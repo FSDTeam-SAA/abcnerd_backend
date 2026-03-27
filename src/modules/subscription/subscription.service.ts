@@ -680,7 +680,9 @@ export const handleStripeWebhook = async (req: any) => {
         status: NotificationStatus.UNREAD,
       });
 
-      console.log(notification);
+      // Emit notification:new so Flutter frontend receives it via generalNotificationStream
+      io.to(String(userId)).emit("notification:new", notification);
+
       console.log(
         `[Webhook] SUCCESS — subscription activated: ${sub._id}, notified userId: ${userId}`
       );
