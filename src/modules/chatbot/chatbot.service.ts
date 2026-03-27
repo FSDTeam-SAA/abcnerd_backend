@@ -102,14 +102,18 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const dayKey = getDayKeyUTC();
   const { filter, setOnInsert } = buildDayFilter(identity, dayKey);
 
-  const result = await DailyChatHistoryModel.findOneAndUpdate(
+  // Check if document already exists before upserting
+  const existing = await DailyChatHistoryModel.findOne(filter);
+
+  // Upsert and get the document (new: true always returns the doc after upsert)
+  const dayDoc = await DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true, includeResultMetadata: true }
+    { upsert: true, new: true }
   );
 
-  // If the document was just inserted, it's the first chat of the day
-  if ((result as any).lastErrorObject?.updatedExisting === false && identity.userId) {
+  // Trigger first-chat notification only when document is newly created
+  if (!existing && identity.userId) {
     const userId = String(identity.userId);
     const title = "AI chat mission arrived";
     const description = "Your daily speaking mission is ready! Chat with AI to complete it.";
@@ -130,7 +134,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
     io.to(userId).emit("notification:new", notif);
   }
 
-  return (result as any).value || (result as any).doc || result;
+  return dayDoc;
 };
 
 // One-shot chat — sends the message without prior context. Persists both user and AI turns to the DB.
