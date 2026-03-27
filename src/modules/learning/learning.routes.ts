@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createLearningSession,
   fetchLearningWords,
+  getLatestSessions,
   wordAction,
 } from "./learning.controller";
 import { authGuard } from "../../middleware/auth.middleware";
@@ -16,6 +17,7 @@ router.post(
 );
 
 router.get("/fetch-words", authGuard, fetchLearningWords);
+router.get("/latest-session", authGuard, getLatestSessions);
 
 router.patch(
   "/word-action",

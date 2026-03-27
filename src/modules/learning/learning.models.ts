@@ -35,11 +35,18 @@ const learningSchema = new Schema<ILearning>(
       type: Number,
       default: 0,
     },
+    memorizedWords: {
+      type: Number,
+      default: 0,
+    },
+    completionPercentage: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );
 
-// save এর আগেই estimatedTime বের করে নাও
 learningSchema.pre("save", function (next) {
   this.estimatedTime = this.dailyGoal / 2;
 });

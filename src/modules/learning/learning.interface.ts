@@ -10,4 +10,6 @@ export interface ILearning {
   isActive: boolean; // একটাই active session থাকবে
   wordType: WordType;
   swipeCount: number;
+  completionPercentage: number;
+  memorizedWords: number;
 }
