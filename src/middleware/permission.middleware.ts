@@ -15,7 +15,7 @@ interface AuthUser {
 }
 
 interface CustomRequest extends Request {
-  user?: AuthUser;
+  user?: AuthUser | undefined;
 }
 
 export const permission =

@@ -1,10 +1,13 @@
 import { Types } from "mongoose";
+import { NotificationModel } from "../notification/notification.models";
+import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 import CustomError from "../../helpers/CustomError";
 import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { Progress } from "../progress/progress.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 import { userModel } from "../usersAuth/user.models";
+import { getIo } from "../../socket/server";
 
 export const createLearningSessionService = async (
   userId: Types.ObjectId,
@@ -37,18 +40,10 @@ export const createLearningSessionService = async (
 
   if (progress) {
     let categories = progress.latestLearningCategory || [];
-
-    // remove duplicate if exists
     categories = categories.filter((c) => c !== categoryDoc.name);
-
-    // add new category to beginning
     categories.unshift(categoryDoc.name);
-
-    // keep only last 3
     categories = categories.slice(0, 3);
-
     progress.latestLearningCategory = categories;
-
     await progress.save();
   }
 
@@ -74,7 +69,7 @@ export const fetchLearningWordsService = async (
     categoryWordId: categoryDoc._id,
     status: "active",
     wordType: wordType,
-    _id: { $nin: excludedIds.map((id) => id.toString()) },
+    _id: { $nin: excludedIds.map((id: any) => id.toString()) },
   }).limit(dailyGoal);
 
   return words;
@@ -119,7 +114,7 @@ export const wordActionService = async (
       $addToSet: { [action]: new Types.ObjectId(wordId) },
       $pull: { [oppositeField]: new Types.ObjectId(wordId) },
     },
-    { returnDocument: "after", upsert: true },
+    { new: true, upsert: true },
   );
 
   // ✅ Deduct balance for BOTH actions (if not unlimited)
@@ -128,21 +123,18 @@ export const wordActionService = async (
     await user.save();
   }
 
-  // ── Daily Stat Update (memorized + reviewLater উভয়ের জন্য) ──
+  // ── Daily Stat Update ──
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // active session থেকে dailyGoal নাও
   const session = await Learning.findOne({ user: userId, isActive: true });
   const dailyGoal = session?.dailyGoal || 0;
 
-  // আজকের stat আগে থেকে আছে কিনা check
   const existingStat = userProgress?.dailyStat;
   const isSameDay =
     existingStat?.date &&
     new Date(existingStat.date).setHours(0, 0, 0, 0) === today.getTime();
 
-  // আজকের stat থাকলে সেটার উপর add করো, না থাকলে fresh start
   const prevMemorizedCount = isSameDay ? existingStat?.memorizedCount || 0 : 0;
   const prevReviewLaterCount = isSameDay
     ? existingStat?.reviewLaterCount || 0
@@ -164,12 +156,65 @@ export const wordActionService = async (
           memorizedCount: newMemorizedCount,
           reviewLaterCount: newReviewLaterCount,
           remainingGoal: Math.max(0, dailyGoal - newSwipedCount),
+          isGoalNotified: isSameDay ? (existingStat?.isGoalNotified || newSwipedCount >= dailyGoal) : (newSwipedCount >= dailyGoal),
         },
       },
     },
   );
 
-  // ── Video + Score + Streak (শুধু memorized এর জন্য) ──
+  const io = getIo();
+
+  // ── Goal Achieved Notification ──
+  const goalAlreadyNotified = isSameDay && existingStat?.isGoalNotified;
+  if (newSwipedCount >= dailyGoal && dailyGoal > 0 && !goalAlreadyNotified) {
+    const title = "Goal Achieved! 🏆";
+    const description = `Congratulations! You've achieved your daily goal of ${dailyGoal} words.`;
+    
+    // Update the flag in DB so it doesn't trigger again today
+    await Progress.findOneAndUpdate(
+      { user: userId },
+      { $set: { "dailyStat.isGoalNotified": true } }
+    );
+
+    const notif = await NotificationModel.create({
+      receiverId: userId.toString(),
+      title,
+      description,
+      type: NotificationType.GOAL,
+      status: NotificationStatus.UNREAD,
+    });
+
+    // Support both multi-event and generic listeners
+    io.to(userId.toString()).emit("goal:achieved", {
+      message: title,
+      description,
+      dailyGoal,
+    });
+    io.to(userId.toString()).emit("notification:new", notif);
+  }
+
+  // ── Review Words Notification (Every 15 words) ──
+  const reviewCount = progress.reviewLater.length;
+  if (reviewCount > 0 && reviewCount % 15 === 0 && action === "reviewLater") {
+    const title = "Review Words Accumulated";
+    const description = `${reviewCount} review words accumulated. Check now.`;
+
+    const notif = await NotificationModel.create({
+      receiverId: userId.toString(),
+      title,
+      description,
+      type: NotificationType.REVIEW,
+      status: NotificationStatus.UNREAD,
+    });
+
+    io.to(userId.toString()).emit("review:accumulated", {
+      message: title,
+      description,
+      count: reviewCount,
+    });
+    io.to(userId.toString()).emit("newNotification", notif);
+  }
+
   if (action !== "memorized") {
     return { progress, shouldShowVideo: false };
   }
@@ -196,7 +241,7 @@ export const wordActionService = async (
       lastActionDate: new Date(),
       nextVideoAt: shouldShowVideo,
     },
-    { returnDocument: "after" },
+    { new: true },
   );
 
   return { progress, shouldShowVideo };

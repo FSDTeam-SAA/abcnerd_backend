@@ -6,6 +6,7 @@ import {
   startBalanceResetCron,
   startPingServerCron,
 } from "./balance-reset.cron";
+import { startNotificationCron } from "./notification.cron";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ export const connectDatabase = async (): Promise<void> => {
     );
     startBalanceResetCron();
     startPingServerCron();
+    startNotificationCron();
   } catch (error) {
     console.error(chalk.red("Database connection failed!!"), error);
     process.exit(1); // stop app if DB fails

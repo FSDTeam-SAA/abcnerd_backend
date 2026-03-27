@@ -9,6 +9,7 @@ import { InvoiceModel } from "../invoice/invoice.models";
 import { getIo } from "../../socket/server";
 import { createNotification } from "../notification/notification.controller";
 import { NotificationModel } from "../notification/notification.models";
+import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 
 type CreateCheckoutPayload = {
   userId: Types.ObjectId | string;
@@ -274,6 +275,7 @@ export const successPayment = async (sessionId: string) => {
   subscription.currentPeriodStart = new Date();
 
   const interval =
+    (subscription as any).planId?.interval ||
     (subscription as any).interval ||
     (subscription as any).billingInterval ||
     "month";
@@ -553,6 +555,15 @@ export const handleStripeWebhook = async (req: any) => {
           currency: session.currency?.toUpperCase() || "KRW",
         });
 
+        const notif = await NotificationModel.create({
+          receiverId: String(session.metadata?.userId),
+          title: "Subscription Activated",
+          description: "Your subscription is now active! Enjoy your premium features.",
+          type: NotificationType.PAYMENT,
+          status: NotificationStatus.UNREAD,
+        });
+        io.to(String(session.metadata?.userId)).emit("notification:new", notif);
+
         console.log(
           `[Webhook] checkout.session.completed — notified userId: ${session.metadata?.userId}`
         );
@@ -579,7 +590,7 @@ export const handleStripeWebhook = async (req: any) => {
         isDeleted: false,
         status: { $in: ["pending", "active"] },
       })
-        .populate("planId", "title price currency credits")
+        .populate("planId", "title price currency interval credits")
         .exec();
 
       if (!sub) {
@@ -596,8 +607,14 @@ export const handleStripeWebhook = async (req: any) => {
       // ── Activate subscription document ─────────────────────────────────────
       sub.status = "active";
       sub.currentPeriodStart = new Date();
+      const interval =
+        (sub as any).planId?.interval ||
+        (sub as any).interval ||
+        (sub as any).billingInterval ||
+        "month";
+
       sub.currentPeriodEnd =
-        (sub as any).interval === "year"
+        interval === "year"
           ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
           : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
       (sub as any).stripePaymentIntentId = pi.id;
@@ -659,8 +676,8 @@ export const handleStripeWebhook = async (req: any) => {
         description: `Your subscription is now active! Plan: ${
           (sub as any).planId.title || "N/A"
         }`,
-        type:   "user",
-        status: "unread",
+        type:   NotificationType.PAYMENT,
+        status: NotificationStatus.UNREAD,
       });
 
       console.log(notification);
@@ -696,6 +713,15 @@ export const handleStripeWebhook = async (req: any) => {
         subscriptionId,
         stripePaymentIntentId: pi.id,
       });
+
+      const notif = await NotificationModel.create({
+        receiverId: String(userId),
+        title: "Payment Failed",
+        description: "Your payment attempt failed. Please check your payment method and try again.",
+        type: NotificationType.PAYMENT,
+        status: NotificationStatus.UNREAD,
+      });
+      io.to(String(userId)).emit("notification:new", notif);
 
       console.log(
         `[Webhook] FAILED PaymentIntent: ${pi.id}, notified userId: ${userId}`

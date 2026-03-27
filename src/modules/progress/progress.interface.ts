@@ -6,6 +6,7 @@ export interface IDailyStat {
   memorizedCount: number;
   reviewLaterCount: number;
   remainingGoal: number; // dailyGoal - swipedCount
+  isGoalNotified: boolean;
 }
 
 export interface IProgress {

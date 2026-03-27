@@ -7,6 +7,11 @@ export enum NotificationType {
   SYSTEM = "system",
   USER = "user",
   ADMIN = "admin",
+  GOAL = "goal",
+  REVIEW = "review",
+  QUIZ = "quiz",
+  MISSION = "mission",
+  PAYMENT = "payment",
 }
     
     export interface INotification {
