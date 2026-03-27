@@ -1,16 +1,15 @@
 // chatbot.service.ts
-import { GoogleGenAI } from "@google/genai";
-import mongoose, { Types } from "mongoose";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Types } from "mongoose";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
 import type { ChatHistory, IChatIdentity, IChatResponse } from "./chatbot.interface";
 import { DailyChatHistoryModel } from "./chatbot.models";
-import { Progress } from "../progress/progress.models";
-import { getIo } from "../../socket/server";
 import { NotificationModel } from "../notification/notification.models";
+import { getIo } from "../../socket/server";
 import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 
-const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
+const ai = new GoogleGenerativeAI(config.geminiApiKey as string);
 
 // System instruction to prime the AI's behavior. Can be adjusted for different personalities or use cases.
 
@@ -20,27 +19,9 @@ Rules:
 - Reply ONLY in English.
 - Be concise, friendly, and accurate.
 - If user asks meaning + examples, respond with short meaning + real-life usage examples.
-- You have access to the user's learned vocabulary. Use these words in your examples or conversation when relevant to help reinforce learning.
 `;
 
-const getUserVocabularyContext = async (userId?: string): Promise<string> => {
-  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) return "";
-  try {
-    const progress = await Progress.findOne({ user: new mongoose.Types.ObjectId(userId) }).populate({
-      path: "memorized",
-      select: "word",
-      options: { limit: 50, sort: { createdAt: -1 } }
-    });
-    if (!progress || !progress.memorized || (progress.memorized as any[]).length === 0) return "";
-    const words = (progress.memorized as any[]).map(w => w.word).filter(Boolean).join(", ");
-    return words ? `\nUser's Learned Vocabulary (use these when relevant): ${words}` : "";
-  } catch (err) {
-    console.error("Error fetching user vocabulary context:", err);
-    return "";
-  }
-};
-
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-1.5-flash";
 const MAX_OUTPUT_TOKENS = 2048;
 const TEMPERATURE = 0.9;
 const MAX_HISTORY_CHARS = 12000;
@@ -103,6 +84,19 @@ const buildDayFilter = (identity: IChatIdentity, dayKey: string) => {
   };
 };
 
+const getUserVocabularyContext = async (userId?: Types.ObjectId | string): Promise<string> => {
+    if (!userId) return "";
+    try {
+        const Progress = (await import("../progress/progress.models")).Progress;
+        const p = await Progress.findOne({ user: userId }).populate("memorized", "word").lean();
+        if (!p || !p.memorized?.length) return "";
+        const words = (p.memorized as any[]).map(w => w.word).slice(-10).join(", ");
+        return `\n\nUser's recently learned vocabulary: ${words}. Try to use these if relevant.`;
+    } catch (e) {
+        return "";
+    }
+};
+
 // Retrieves today's chat doc for the user, or creates it if it doesn't exist.
 const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const dayKey = getDayKeyUTC();
@@ -111,7 +105,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const result = await DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true, rawResult: true }
+    { upsert: true, new: true, includeResultMetadata: true }
   );
 
   // If the document was just inserted, it's the first chat of the day
@@ -136,7 +130,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
     io.to(userId).emit("notification:new", notif);
   }
 
-  return (result as any).value;
+  return (result as any).value || (result as any).doc || result;
 };
 
 // One-shot chat — sends the message without prior context. Persists both user and AI turns to the DB.
@@ -147,26 +141,25 @@ const chat = async (
   if (!message?.trim()) throw new CustomError(400, "Message is required");
 
   const dayDoc = await getOrCreateDayDoc(identity);
+  if (!dayDoc) throw new CustomError(500, "Failed to initialize chat session");
 
   const vocabContext = await getUserVocabularyContext(identity.userId);
+
   const aiResponse = await handleGeminiError(async () => {
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: message,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
-        temperature: TEMPERATURE,
-      },
-    });
-    return response.text ?? "";
+    const model = ai.getGenerativeModel({ model: MODEL, systemInstruction: SYSTEM_INSTRUCTION + vocabContext });
+    const result = await model.generateContent(message);
+    const response = await result.response;
+    return response.text();
   });
 
-  dayDoc.messages.push(
+  if (!(dayDoc as any).messages) {
+    (dayDoc as any).messages = [];
+  }
+  (dayDoc as any).messages.push(
     { role: "user", parts: [{ text: message }] },
     { role: "model", parts: [{ text: aiResponse }] }
   );
-  await dayDoc.save();
+  await (dayDoc as any).save();
   return { response: aiResponse };
 };
 
@@ -182,36 +175,38 @@ const chatWithHistory = async (
   }
 
   const dayDoc = await getOrCreateDayDoc(identity);
-  const trimmedHistory = trimHistoryByChars(dayDoc.messages as ChatHistory);
+  if (!dayDoc) throw new CustomError(500, "Failed to initialize chat session");
+
+  if (!(dayDoc as any).messages) {
+    (dayDoc as any).messages = [];
+  }
+  const trimmedHistory = trimHistoryByChars((dayDoc as any).messages as ChatHistory);
 
   const vocabContext = await getUserVocabularyContext(identity.userId);
-  const aiResponse = await handleGeminiError(async () => {
-    const contents = [
-      ...trimmedHistory.map((msg) => ({
-        role: msg.role,
-        parts: msg.parts.map((p) => ({ text: p.text })),
-      })),
-      { role: "user" as const, parts: [{ text: message }] },
-    ];
 
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
-        temperature: TEMPERATURE,
-      },
+  const aiResponse = await handleGeminiError(async () => {
+    const model = ai.getGenerativeModel({ model: MODEL, systemInstruction: SYSTEM_INSTRUCTION + vocabContext });
+    const chat = model.startChat({
+        history: trimmedHistory.map(msg => ({
+            role: msg.role === "model" ? "model" : "user",
+            parts: msg.parts.map(p => ({ text: p.text }))
+        })),
+        generationConfig: {
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            temperature: TEMPERATURE,
+        }
     });
 
-    return response.text ?? "";
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    return response.text();
   });
 
-  dayDoc.messages.push(
+  (dayDoc as any).messages.push(
     { role: "user", parts: [{ text: message }] },
     { role: "model", parts: [{ text: aiResponse }] }
   );
-  await dayDoc.save();
+  await (dayDoc as any).save();
 
   return { response: aiResponse };
 };
@@ -237,7 +232,7 @@ const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $set: { isDeleted: true } },
-    { returnDocument: "after" }
+    { new: true }
   );
 };
 
