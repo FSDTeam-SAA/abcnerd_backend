@@ -4,6 +4,7 @@ import {
   fetchLearningWordsService,
   wordActionService,
   getActiveSessionService,
+  getLatestSessionsService,
 } from "./learning.service";
 import { Types } from "mongoose";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -72,3 +73,18 @@ export const wordAction = asyncHandler(async (req: Request, res: Response) => {
     shouldShowVideo: result.shouldShowVideo,
   });
 });
+
+export const getLatestSessions = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?._id as Types.ObjectId;
+
+    const sessions = await getLatestSessionsService(new Types.ObjectId(userId));
+
+    ApiResponse.sendSuccess(
+      res,
+      200,
+      "Latest sessions fetched successfully",
+      sessions,
+    );
+  },
+);
