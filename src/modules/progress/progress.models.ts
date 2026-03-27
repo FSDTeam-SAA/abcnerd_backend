@@ -8,6 +8,7 @@ const dailyStatSchema = new Schema<any>(
     memorizedCount: { type: Number, default: 0 },
     reviewLaterCount: { type: Number, default: 0 },
     remainingGoal: { type: Number, default: 0 },
+    isGoalNotified: { type: Boolean, default: false },
   },
   { _id: false },
 );

@@ -6,6 +6,9 @@ import config from "../../config";
 import type { ChatHistory, IChatIdentity, IChatResponse } from "./chatbot.interface";
 import { DailyChatHistoryModel } from "./chatbot.models";
 import { Progress } from "../progress/progress.models";
+import { getIo } from "../../socket/server";
+import { NotificationModel } from "../notification/notification.models";
+import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
@@ -105,11 +108,35 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const dayKey = getDayKeyUTC();
   const { filter, setOnInsert } = buildDayFilter(identity, dayKey);
 
-  return DailyChatHistoryModel.findOneAndUpdate(
+  const result = await DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, returnDocument: "after" }
+    { upsert: true, new: true, rawResult: true }
   );
+
+  // If the document was just inserted, it's the first chat of the day
+  if ((result as any).lastErrorObject?.updatedExisting === false && identity.userId) {
+    const userId = String(identity.userId);
+    const title = "AI chat mission arrived";
+    const description = "Your daily speaking mission is ready! Chat with AI to complete it.";
+
+    const notif = await NotificationModel.create({
+      receiverId: userId,
+      title,
+      description,
+      type: NotificationType.MISSION,
+      status: NotificationStatus.UNREAD,
+    });
+
+    const io = getIo();
+    io.to(userId).emit("ai_mission:arrived", {
+      message: title,
+      description,
+    });
+    io.to(userId).emit("notification:new", notif);
+  }
+
+  return (result as any).value;
 };
 
 // One-shot chat — sends the message without prior context. Persists both user and AI turns to the DB.

@@ -5,6 +5,8 @@ import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 import { QuestionModel } from "./question.models";
 import { paginationHelper } from "../../utils/pagination";
+import { notifyAllUsers } from "../../utils/notification";
+import { NotificationType } from "../notification/notification.interface";
 
 // ── Create Question ───────────────────────────────────────
 export const createQuestionService = async (payload: any) => {
@@ -22,6 +24,14 @@ export const createQuestionService = async (payload: any) => {
     throw new CustomError(400, "correctAnswer must be one of the options");
 
   const question = await QuestionModel.create(payload);
+  
+  // ── Notify all users about new weekly quizquestions ──
+  await notifyAllUsers(
+    "New weekly quiz updated",
+    "Fresh questions have been added to the quiz! Challenge your skills now.",
+    NotificationType.QUIZ
+  );
+
   return question;
 };
 
