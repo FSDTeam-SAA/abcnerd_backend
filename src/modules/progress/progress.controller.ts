@@ -38,6 +38,8 @@ export const getProgressWords = asyncHandler(
       type as "memorized" | "reviewLater",
     );
 
+    // console.log(words);
+
     ApiResponse.sendSuccess(res, 200, `${type} words retrieved successfully`, {
       total: words.length,
       data: words,
@@ -55,16 +57,9 @@ export const getReviewLater = asyncHandler(
         ? "Review later words retrieved successfully"
         : "No review later words found";
 
-    ApiResponse.sendSuccess(
-      res,
-      200,
-      message,
-      data,
-      meta
-    );
+    ApiResponse.sendSuccess(res, 200, message, data, meta);
   },
 );
-
 
 export const toggleFavorite = asyncHandler(
   async (req: Request, res: Response) => {
