@@ -1,5 +1,5 @@
 // chatbot.service.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { Types } from "mongoose";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
@@ -9,7 +9,7 @@ import { NotificationModel } from "../notification/notification.models";
 import { getIo } from "../../socket/server";
 import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 
-const ai = new GoogleGenerativeAI(config.geminiApiKey as string);
+const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
 // System instruction to prime the AI's behavior. Can be adjusted for different personalities or use cases.
 
@@ -150,10 +150,16 @@ const chat = async (
   const vocabContext = await getUserVocabularyContext(identity.userId);
 
   const aiResponse = await handleGeminiError(async () => {
-    const model = ai.getGenerativeModel({ model: MODEL, systemInstruction: SYSTEM_INSTRUCTION + vocabContext });
-    const result = await model.generateContent(message);
-    const response = await result.response;
-    return response.text();
+    const result = await ai.models.generateContent({
+      model: MODEL,
+      contents: message,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        temperature: TEMPERATURE,
+      },
+    });
+    return result.text ?? "";
   });
 
   if (!(dayDoc as any).messages) {
@@ -189,21 +195,21 @@ const chatWithHistory = async (
   const vocabContext = await getUserVocabularyContext(identity.userId);
 
   const aiResponse = await handleGeminiError(async () => {
-    const model = ai.getGenerativeModel({ model: MODEL, systemInstruction: SYSTEM_INSTRUCTION + vocabContext });
-    const chat = model.startChat({
-        history: trimmedHistory.map(msg => ({
-            role: msg.role === "model" ? "model" : "user",
-            parts: msg.parts.map(p => ({ text: p.text }))
-        })),
-        generationConfig: {
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-            temperature: TEMPERATURE,
-        }
+    const chat = ai.chats.create({
+      model: MODEL,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        temperature: TEMPERATURE,
+      },
+      history: trimmedHistory.map(msg => ({
+        role: msg.role === "model" ? "model" : "user",
+        parts: msg.parts.map(p => ({ text: p.text })),
+      })),
     });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+    const result = await chat.sendMessage({ message });
+    return result.text ?? "";
   });
 
   (dayDoc as any).messages.push(
