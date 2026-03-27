@@ -53,12 +53,44 @@ const getAllCategoryWords = async (req: any) => {
   const sort: any = sortBy === "acc" ? { createdAt: 1 } : { createdAt: -1 };
 
   // Fetch data
-  const categoryWords = await CategoryWordModel.find(filter)
+  let categoryWords = await CategoryWordModel.find(filter)
     .skip(skip)
     .limit(limit)
-    .sort(sort);
+    .sort(sort)
+    .lean() as any;
 
   const total = await CategoryWordModel.countDocuments(filter);
+
+  if (role !== "admin" && req?.user?._id) {
+    const { Progress } = await import("../progress/progress.models");
+    const { WordmanagementModel } = await import("../wordmanagement/wordmanagement.models");
+    
+    const userId = req.user._id;
+    const progress = await Progress.findOne({ user: userId });
+    const memorizedIds = progress?.memorized || [];
+    const memorizedStrs = memorizedIds.map((id: any) => id.toString());
+
+    categoryWords = await Promise.all(
+      categoryWords.map(async (cat: any) => {
+        const totalWord = await WordmanagementModel.countDocuments({
+          categoryWordId: cat._id,
+          status: "active"
+        });
+        
+        const learnedWord = await WordmanagementModel.countDocuments({
+          categoryWordId: cat._id,
+          status: "active",
+          _id: { $in: memorizedStrs }
+        });
+
+        return {
+          ...cat,
+          totalWord,
+          learnedWord
+        };
+      })
+    );
+  }
 
   return {
     categoryWords,
