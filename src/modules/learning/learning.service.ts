@@ -1,9 +1,6 @@
 import { Types } from "mongoose";
 import { NotificationModel } from "../notification/notification.models";
-import {
-  NotificationStatus,
-  NotificationType,
-} from "../notification/notification.interface";
+import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 import CustomError from "../../helpers/CustomError";
 import { Learning } from "./learning.models";
 import { CategoryWordModel } from "../categoryword/categoryword.models";
@@ -86,7 +83,9 @@ export const wordActionService = async (
   const oppositeField = action === "memorized" ? "reviewLater" : "memorized";
   const userProgress = await Progress.findOne({ user: userId });
 
-  const user = await userModel.findById(userId).select("email balance");
+  const user = await userModel
+    .findById(userId)
+    .select("email balance");
 
   if (!user) throw new CustomError(404, "User not found");
 
@@ -130,19 +129,7 @@ export const wordActionService = async (
 
   const session = await Learning.findOne({ user: userId, isActive: true });
   const dailyGoal = session?.dailyGoal || 0;
-  if (action === "memorized" && session) {
-    const newMemorizedWords = (session.memorizedWords || 0) + 1;
-    const completionPercentage =
-      dailyGoal > 0
-        ? Math.min(100, Math.round((newMemorizedWords / dailyGoal) * 100))
-        : 0;
 
-    await Learning.findByIdAndUpdate(session._id, {
-      $inc: { swipeCount: 1 },
-      memorizedWords: newMemorizedWords,
-      completionPercentage,
-    });
-  }
   const existingStat = userProgress?.dailyStat;
   const isSameDay =
     existingStat?.date &&
@@ -169,9 +156,7 @@ export const wordActionService = async (
           memorizedCount: newMemorizedCount,
           reviewLaterCount: newReviewLaterCount,
           remainingGoal: Math.max(0, dailyGoal - newSwipedCount),
-          isGoalNotified: isSameDay
-            ? existingStat?.isGoalNotified || newSwipedCount >= dailyGoal
-            : newSwipedCount >= dailyGoal,
+          isGoalNotified: isSameDay ? (existingStat?.isGoalNotified || newSwipedCount >= dailyGoal) : (newSwipedCount >= dailyGoal),
         },
       },
     },
@@ -184,11 +169,11 @@ export const wordActionService = async (
   if (newSwipedCount >= dailyGoal && dailyGoal > 0 && !goalAlreadyNotified) {
     const title = "Goal Achieved! 🏆";
     const description = `Congratulations! You've achieved your daily goal of ${dailyGoal} words.`;
-
+    
     // Update the flag in DB so it doesn't trigger again today
     await Progress.findOneAndUpdate(
       { user: userId },
-      { $set: { "dailyStat.isGoalNotified": true } },
+      { $set: { "dailyStat.isGoalNotified": true } }
     );
 
     const notif = await NotificationModel.create({
@@ -227,7 +212,7 @@ export const wordActionService = async (
       description,
       count: reviewCount,
     });
-    io.to(userId.toString()).emit("notification:new", notif);
+    io.to(userId.toString()).emit("newNotification", notif);
   }
 
   if (action !== "memorized") {
@@ -266,12 +251,4 @@ export const getActiveSessionService = async (userId: Types.ObjectId) => {
   const session = await Learning.findOne({ user: userId, isActive: true });
   if (!session) throw new CustomError(404, "No active session found");
   return session;
-};
-
-export const getLatestSessionsService = async (userId: Types.ObjectId) => {
-  const sessions = await Learning.find({ user: userId })
-    .sort({ createdAt: -1 })
-    .limit(2);
-
-  return sessions;
 };
