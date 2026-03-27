@@ -14,7 +14,7 @@ interface AuthRequest extends Request {
     _id: string | Types.ObjectId;
     email: string;
     role: string;
-  };
+  } | undefined;
 }
 
 export const authGuard = async (

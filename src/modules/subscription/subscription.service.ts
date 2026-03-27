@@ -9,6 +9,7 @@ import { InvoiceModel } from "../invoice/invoice.models";
 import { getIo } from "../../socket/server";
 import { createNotification } from "../notification/notification.controller";
 import { NotificationModel } from "../notification/notification.models";
+import { NotificationStatus, NotificationType } from "../notification/notification.interface";
 
 type CreateCheckoutPayload = {
   userId: Types.ObjectId | string;
@@ -554,6 +555,15 @@ export const handleStripeWebhook = async (req: any) => {
           currency: session.currency?.toUpperCase() || "KRW",
         });
 
+        const notif = await NotificationModel.create({
+          receiverId: String(session.metadata?.userId),
+          title: "Subscription Activated",
+          description: "Your subscription is now active! Enjoy your premium features.",
+          type: NotificationType.PAYMENT,
+          status: NotificationStatus.UNREAD,
+        });
+        io.to(String(session.metadata?.userId)).emit("notification:new", notif);
+
         console.log(
           `[Webhook] checkout.session.completed — notified userId: ${session.metadata?.userId}`
         );
@@ -666,8 +676,8 @@ export const handleStripeWebhook = async (req: any) => {
         description: `Your subscription is now active! Plan: ${
           (sub as any).planId.title || "N/A"
         }`,
-        type:   "user",
-        status: "unread",
+        type:   NotificationType.PAYMENT,
+        status: NotificationStatus.UNREAD,
       });
 
       console.log(notification);
@@ -703,6 +713,15 @@ export const handleStripeWebhook = async (req: any) => {
         subscriptionId,
         stripePaymentIntentId: pi.id,
       });
+
+      const notif = await NotificationModel.create({
+        receiverId: String(userId),
+        title: "Payment Failed",
+        description: "Your payment attempt failed. Please check your payment method and try again.",
+        type: NotificationType.PAYMENT,
+        status: NotificationStatus.UNREAD,
+      });
+      io.to(String(userId)).emit("notification:new", notif);
 
       console.log(
         `[Webhook] FAILED PaymentIntent: ${pi.id}, notified userId: ${userId}`
