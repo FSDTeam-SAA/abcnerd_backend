@@ -41,7 +41,7 @@ export const getProgressWordsService = async (
 ) => {
   const progress = await Progress.findOne({ user: userId }).populate({
     path: type,
-    select: "word synonyms examples description slug",
+    select: "word synonyms examples pronunciation description slug",
   });
 
   if (!progress) throw new CustomError(404, "Progress not found");
@@ -138,7 +138,7 @@ export const getReviewLaterService = async (req: any) => {
   const [words, totalReviewLater] = await Promise.all([
     WordmanagementModel.find(filter)
       .select(
-        "word synonyms description examples slug wordType categoryType status createdAt",
+        "word synonyms description examples pronunciation slug wordType categoryType status createdAt",
       )
       .sort({ createdAt: sortValue })
       .skip(skip)
