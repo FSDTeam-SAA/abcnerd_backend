@@ -56,7 +56,7 @@ export const resetDailyBalances = async (): Promise<void> => {
             "balance.validityDate": sub.currentPeriodEnd || tomorrowUTC,
             // subscription block
             "subscription.subscriptionId": String(sub._id),
-            "subscription.plan": null,
+            "subscription.plan": "Free",
             "subscription.status": SubscriptionStatus.ACTIVE,
             "subscription.startDate": sub.currentPeriodStart || now,
             "subscription.endDate": sub.currentPeriodEnd || tomorrowUTC,
@@ -154,7 +154,7 @@ export const resetDailyBalances = async (): Promise<void> => {
       const user = sub.userId as any;
       const plan = sub.planId as any;
       if (!user) continue;
-      
+
       try {
         // Create In-App Notification (Database only)
         await NotificationModel.create({
@@ -208,8 +208,10 @@ export const startPingServerCron = (): void => {
   const schedule = "*/8 * * * *"; // every 8 minutes
 
   const urls = [
-    "https://abcnerd-backend.onrender.com/api/v1/ping", // primary
-    "https://abcnerd-backend-v4we.onrender.com/api/v1/ping", // fallback
+    // "https://abcnerd-backend.onrender.com/api/v1/ping", // primary
+    // "https://abcnerd-backend-v4we.onrender.com/api/v1/ping", // fallback
+    "http://localhost:5000/api/v1/ping", // primary
+
   ];
 
   cron.schedule(
