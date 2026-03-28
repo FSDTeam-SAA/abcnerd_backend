@@ -188,7 +188,7 @@ userSchema.methods.comparePassword = async function (
   return await bcrypt.compare(password, this.password);
 };
 
-// Change password method
+// update password method
 userSchema.methods.updatePassword = async function (
   currentPassword: string,
   newPassword: string,
