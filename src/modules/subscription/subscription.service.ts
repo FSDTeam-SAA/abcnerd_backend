@@ -36,11 +36,11 @@ function buildUserActivationUpdate(
   const set: Record<string, any> = {
     // ── subscription block (matches userSchema exactly) ──────────────────────
     "subscription.subscriptionId": String(subscriptionDocId || null),
-    "subscription.plan":               planDoc?.title || null,
-    "subscription.status":             "active",
-    "subscription.startDate":          periodStart,
-    "subscription.endDate":            periodEnd,
-    "subscription.lastResetDate":      new Date(),
+    "subscription.plan": (planDoc?.title || "free").toLowerCase(),
+    "subscription.status": "active",
+    "subscription.startDate": periodStart,
+    "subscription.endDate": periodEnd,
+    "subscription.lastResetDate": new Date(),
 
     // ── balance block ────────────────────────────────────────────────────────
     // validityDate mirrors periodEnd so the cron knows when credits expire
@@ -192,10 +192,10 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
     cancel_url: `${config.frontendUrl}/payment/cancel`,
 
     metadata: {
-      userId:            String(userId),
+      userId: String(userId),
       subscriptionDocId: String(sub._id),
-      planId:            String(plan._id),
-      type:              "plan_payment",
+      planId: String(plan._id),
+      type: "plan_payment",
     },
   });
 
@@ -203,12 +203,12 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
   await sub.save();
 
   return {
-    checkoutUrl:      session.url,
-    sessionId:        session.id,
-    subscriptionId:   sub._id,
+    checkoutUrl: session.url,
+    sessionId: session.id,
+    subscriptionId: sub._id,
     stripeCustomerId: customerId,
-    amount:           plan.price,
-    currency:         currency.toUpperCase(),
+    amount: plan.price,
+    currency: currency.toUpperCase(),
   };
 };
 
@@ -253,19 +253,19 @@ export const successPayment = async (sessionId: string) => {
       message: "Subscription already active",
       subscriptionId: subscription._id,
       stripe: {
-        sessionId:     session.id,
+        sessionId: session.id,
         paymentStatus: session.payment_status,
-        amountTotal:   session.amount_total,
-        currency:      session.currency?.toUpperCase(),
-        customerName:  session.customer_details?.name,
+        amountTotal: session.amount_total,
+        currency: session.currency?.toUpperCase(),
+        customerName: session.customer_details?.name,
         customerEmail: session.customer_details?.email,
       },
       items: lineItems.data.map((li) => ({
         description: li.description,
-        quantity:    li.quantity,
+        quantity: li.quantity,
         amountTotal: li.amount_total,
-        currency:    li.currency,
-        priceId:     li.price?.id,
+        currency: li.currency,
+        priceId: li.price?.id,
       })),
     };
   }
@@ -283,7 +283,7 @@ export const successPayment = async (sessionId: string) => {
   subscription.currentPeriodEnd =
     interval === "year"
       ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   (subscription as any).stripePaymentStatus = session.payment_status;
   (subscription as any).stripeSessionStatus = session.status || null;
@@ -326,16 +326,15 @@ export const successPayment = async (sessionId: string) => {
 
   // ── Create invoice ─────────────────────────────────────────────────────────
   const invoice = await InvoiceModel.create({
-    title:       `Invoice for ${(subscription as any).planId.title} Plan`,
-    description: `Subscription activated for ${user?.name || "Customer"} (${
-      user?.email || "Unknown email"
-    }) on ${new Date().toLocaleDateString()}`,
-    userId:    subscription.userId,
-    email:     user?.email || session.customer_details?.email || "Unknown email",
-    planName:  (subscription as any).planId.title,
+    title: `Invoice for ${(subscription as any).planId.title} Plan`,
+    description: `Subscription activated for ${user?.name || "Customer"} (${user?.email || "Unknown email"
+      }) on ${new Date().toLocaleDateString()}`,
+    userId: subscription.userId,
+    email: user?.email || session.customer_details?.email || "Unknown email",
+    planName: (subscription as any).planId.title,
     startDate: subscription.currentPeriodStart,
-    endDate:   subscription.currentPeriodEnd,
-    status:    "paid",
+    endDate: subscription.currentPeriodEnd,
+    status: "paid",
     isDeleted: false,
   });
 
@@ -343,22 +342,22 @@ export const successPayment = async (sessionId: string) => {
   await subscription.save();
 
   return {
-    message:        "Subscription activated successfully",
+    message: "Subscription activated successfully",
     subscriptionId: subscription._id,
     stripe: {
-      sessionId:     session.id,
+      sessionId: session.id,
       paymentStatus: session.payment_status,
-      amountTotal:   session.amount_total,
-      currency:      session.currency?.toUpperCase(),
-      customerName:  session.customer_details?.name,
+      amountTotal: session.amount_total,
+      currency: session.currency?.toUpperCase(),
+      customerName: session.customer_details?.name,
       customerEmail: session.customer_details?.email,
     },
     items: lineItems.data.map((li) => ({
       description: li.description,
-      quantity:    li.quantity,
+      quantity: li.quantity,
       amountTotal: li.amount_total,
-      currency:    li.currency,
-      priceId:     li.price?.id,
+      currency: li.currency,
+      priceId: li.price?.id,
     })),
   };
 };
@@ -389,7 +388,7 @@ export const failedPayment = async (sessionId: string) => {
   }
 
   return {
-    message:   "Payment failed or was cancelled. Subscription not activated.",
+    message: "Payment failed or was cancelled. Subscription not activated.",
     sessionId,
   };
 };
@@ -419,8 +418,7 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   if (existingActive) {
     throw new CustomError(
       409,
-      `Already have an active subscription, ${
-        (existingActive as any).planId?.title || "current Plan"
+      `Already have an active subscription, ${(existingActive as any).planId?.title || "current Plan"
       } expires on ${new Date(
         (existingActive as any).currentPeriodEnd || 0
       ).toLocaleDateString()}`
@@ -483,16 +481,16 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount:   plan.price,
+    amount: plan.price,
     currency,
     customer: customerId,
     automatic_payment_methods: { enabled: true },
     receipt_email: userEmail,
     metadata: {
-      userId:         String(userId),
-      planId:         String(planId),
+      userId: String(userId),
+      planId: String(planId),
       subscriptionId: String(sub._id),
-      type:           "plan_payment_intent",
+      type: "plan_payment_intent",
     },
   });
 
@@ -504,8 +502,8 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
 
   return {
     paymentIntentId: paymentIntent.id,
-    clientSecret:    paymentIntent.client_secret,
-    subscriptionId:  sub._id,
+    clientSecret: paymentIntent.client_secret,
+    subscriptionId: sub._id,
   };
 };
 
@@ -547,11 +545,11 @@ export const handleStripeWebhook = async (req: any) => {
 
         const io = getIo();
         io.to(String(session.metadata?.userId)).emit("payment:success", {
-          message:         "Your subscription is now active!",
-          subscriptionId:  session.metadata?.subscriptionDocId,
-          planId:          session.metadata?.planId,
+          message: "Your subscription is now active!",
+          subscriptionId: session.metadata?.subscriptionDocId,
+          planId: session.metadata?.planId,
           stripeSessionId: session.id,
-          amount:   session.amount_total ? session.amount_total / 100 : 0,
+          amount: session.amount_total ? session.amount_total / 100 : 0,
           currency: session.currency?.toUpperCase() || "KRW",
         });
 
@@ -616,7 +614,7 @@ export const handleStripeWebhook = async (req: any) => {
       sub.currentPeriodEnd =
         interval === "year"
           ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          : new Date(Date.now() + 30  * 24 * 60 * 60 * 1000);
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       (sub as any).stripePaymentIntentId = pi.id;
       await sub.save();
 
@@ -641,16 +639,15 @@ export const handleStripeWebhook = async (req: any) => {
 
       // ── Create invoice ─────────────────────────────────────────────────────
       const invoice = await InvoiceModel.create({
-        title:       `Invoice for ${(sub as any).planId.title} Plan`,
-        description: `Subscription activated for ${
-          user?.name || "Customer"
-        } (${user?.email || "Unknown email"}) on ${new Date().toLocaleDateString()}`,
-        userId:    sub.userId,
-        email:     user?.email || pi.receipt_email || "Unknown email",
-        planName:  (sub as any).planId.title,
+        title: `Invoice for ${(sub as any).planId.title} Plan`,
+        description: `Subscription activated for ${user?.name || "Customer"
+          } (${user?.email || "Unknown email"}) on ${new Date().toLocaleDateString()}`,
+        userId: sub.userId,
+        email: user?.email || pi.receipt_email || "Unknown email",
+        planName: (sub as any).planId.title,
         startDate: sub.currentPeriodStart,
-        endDate:   sub.currentPeriodEnd,
-        status:    "paid",
+        endDate: sub.currentPeriodEnd,
+        status: "paid",
         isDeleted: false,
       });
 
@@ -660,23 +657,22 @@ export const handleStripeWebhook = async (req: any) => {
       // ── Emit socket ────────────────────────────────────────────────────────
       const io = getIo();
       io.to(String(userId)).emit("payment:success", {
-        message:               "Your subscription is now active!",
-        subscriptionId:        sub._id,
-        planId:                (sub as any).planId._id,
-        planName:              (sub as any).planId.title,
-        amount:                pi.amount_received / 100,
-        currency:              pi.currency?.toUpperCase() || "KRW",
+        message: "Your subscription is now active!",
+        subscriptionId: sub._id,
+        planId: (sub as any).planId._id,
+        planName: (sub as any).planId.title,
+        amount: pi.amount_received / 100,
+        currency: pi.currency?.toUpperCase() || "KRW",
         stripePaymentIntentId: pi.id,
       });
 
       // ── Create notification ────────────────────────────────────────────────
       const notification = await NotificationModel.create({
-        receiverId:  String(userId),
-        title:       "Subscription Activated",
-        description: `Your subscription is now active! Plan: ${
-          (sub as any).planId.title || "N/A"
-        }`,
-        type:   NotificationType.PAYMENT,
+        receiverId: String(userId),
+        title: "Subscription Activated",
+        description: `Your subscription is now active! Plan: ${(sub as any).planId.title || "N/A"
+          }`,
+        type: NotificationType.PAYMENT,
         status: NotificationStatus.UNREAD,
       });
 
@@ -698,7 +694,7 @@ export const handleStripeWebhook = async (req: any) => {
 
       // Mark subscription as failed
       await SubscriptionModel.findByIdAndUpdate(subscriptionId, {
-        status:    "failed",
+        status: "failed",
         updatedAt: new Date(),
       });
 
@@ -709,7 +705,7 @@ export const handleStripeWebhook = async (req: any) => {
 
       const io = getIo();
       io.to(String(userId)).emit("payment:failed", {
-        message:               "Payment failed. Please try again.",
+        message: "Payment failed. Please try again.",
         subscriptionId,
         stripePaymentIntentId: pi.id,
       });
