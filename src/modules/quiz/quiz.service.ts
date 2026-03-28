@@ -8,6 +8,7 @@ import { NotebookModel } from "../notebook/notebook.models";
 import { QuizModel } from "./quiz.models";
 import { QuizAttemptModel } from "../quizattempt/quizattempt.models";
 import { paginationHelper } from "../../utils/pagination";
+import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
 
 export const generateQuizService = async (
   userId: Types.ObjectId,
@@ -76,13 +77,20 @@ export const generateQuizService = async (
     totalQuestions: finalQuestions.length,
   });
 
-  const safeQuestions = finalQuestions.map((q) => ({
-    _id: q._id,
-    questionText: q.questionText,
-    options: q.options,
-    // correctAnswer: q.correctAnswer,
-    wordRef: q.wordRef,
-  }));
+  const safeQuestions = await Promise.all(
+    finalQuestions.map(async (q) => {
+      const word = await WordmanagementModel.findById(q.wordRef).select("word");
+
+      return {
+        _id: q._id,
+        questionText: q.questionText,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        wordRef: q.wordRef,
+        word: word ?? null,
+      };
+    }),
+  );
 
   return {
     quizId: quiz._id,
