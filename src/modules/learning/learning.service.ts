@@ -241,6 +241,9 @@ export const wordActionService = async (
       lastActionDate: new Date(),
       nextVideoAt: shouldShowVideo,
     },
+
+    // Hello changes
+
     { new: true },
   );
 
