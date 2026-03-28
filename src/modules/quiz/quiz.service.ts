@@ -79,7 +79,7 @@ export const generateQuizService = async (
 
   const safeQuestions = await Promise.all(
     finalQuestions.map(async (q) => {
-      const word = await WordmanagementModel.findById(q.wordRef).select("word");
+      const word = await WordmanagementModel.findById(q.wordRef).select("word pronunciation");
 
       return {
         _id: q._id,
