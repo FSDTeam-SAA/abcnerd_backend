@@ -33,41 +33,58 @@ function buildUserActivationUpdate(
   periodEnd: Date,
   subscriptionDocId: any
 ) {
+  // ✅ allowed enum values (match your SubscriptionPlan enum)
+  const allowedPlans = ["Basic", "Pro", "Premium", "Unlimited"];
+
   const set: Record<string, any> = {
-    // ── subscription block (matches userSchema exactly) ──────────────────────
+    // ── subscription block ─────────────────────────────
     "subscription.subscriptionId": String(subscriptionDocId || null),
-    "subscription.plan": (planDoc?.title || "free").toLowerCase(),
+
+    "subscription.plan": allowedPlans.includes(planDoc?.title)
+      ? planDoc.title
+      : "Basic",
+
     "subscription.status": "active",
     "subscription.startDate": periodStart,
     "subscription.endDate": periodEnd,
     "subscription.lastResetDate": new Date(),
 
-    // ── balance block ────────────────────────────────────────────────────────
-    // validityDate mirrors periodEnd so the cron knows when credits expire
+    // ── balance block ─────────────────────────────────
     "balance.validityDate": periodEnd,
   };
 
-  // Only update credit counts if the plan actually grants them
+  // ✅ wordSwipe credit logic
   if (planDoc?.credits?.wordSwipe !== undefined) {
     if (planDoc.credits.wordSwipe === -1) {
       set["balance.wordSwipe"] = -1;
     } else {
-      const current = currentBalance?.wordSwipe === -1 ? 0 : (currentBalance?.wordSwipe || 0);
-      set["balance.wordSwipe"] = current + planDoc.credits.wordSwipe;
+      const current =
+        currentBalance?.wordSwipe === -1
+          ? 0
+          : currentBalance?.wordSwipe || 0;
+
+      set["balance.wordSwipe"] =
+        current + planDoc.credits.wordSwipe;
     }
   }
+
+  // ✅ aiChat credit logic
   if (planDoc?.credits?.aiChat !== undefined) {
     if (planDoc.credits.aiChat === -1) {
       set["balance.aiChat"] = -1;
     } else {
-      const current = currentBalance?.aiChat === -1 ? 0 : (currentBalance?.aiChat || 0);
-      set["balance.aiChat"] = current + planDoc.credits.aiChat;
+      const current =
+        currentBalance?.aiChat === -1
+          ? 0
+          : currentBalance?.aiChat || 0;
+
+      set["balance.aiChat"] =
+        current + planDoc.credits.aiChat;
     }
   }
 
   return { $set: set };
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Create checkout session (called from controller)
