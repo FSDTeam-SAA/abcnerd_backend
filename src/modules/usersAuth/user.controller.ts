@@ -122,7 +122,7 @@ export const logout = asyncHandler(async (req: Request, res: Response
 //: forget password
 export const forgetPassword = asyncHandler(async (req, res) => {
   const user = await userService.forgetPassword(req.body.email);
-  ApiResponse.sendSuccess(res, 200, "Reset link sent to email", {
+  ApiResponse.sendSuccess(res, 200, "Reset password otp sent to your email", {
     email: user.email,
     name: user.name,
     message: "Reset password otp sent to your email",
