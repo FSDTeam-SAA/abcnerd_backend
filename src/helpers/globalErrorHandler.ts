@@ -37,10 +37,11 @@ export const globalErrorHandler = (
     : new CustomError(500, error.message);
 
   if (error instanceof jwt.TokenExpiredError) {
-    err = new CustomError(401, "Access token has expired. Please login again.");
+    err = new CustomError(401, "JWT token expired.");
   } else if (error instanceof jwt.JsonWebTokenError) {
-    err = new CustomError(401, "Invalid access token. Please login again.");
-  } else if (error.name === "ValidationError") {
+    err = new CustomError(401, "Invalid access token.");
+  } else 
+    if (error.name === "ValidationError") {
     const validationErrors = Object.values((error as mongoose.Error.ValidationError).errors).map((el: any) => ({
       field: el.path,
       message: el.message,
