@@ -13,6 +13,9 @@ export enum NotificationType {
   MISSION = "mission",
   PAYMENT = "payment",
   SUBSCRIPTION = "SUBSCRIPTION",
+  WORD_REVIEW = "word_review",
+  AI_CHAT_MISSION = "ai_chat_mission",
+  WEEKLY_QUIZ = "weekly_quiz",
 }
 
 export interface INotification {
