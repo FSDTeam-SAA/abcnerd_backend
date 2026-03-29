@@ -89,10 +89,10 @@ export interface AppleLoginResult {
 }
 
 export enum SubscriptionPlan {
-  BASIC = "Basic",
-  PRO = "Pro",
-  PREMIUM = "Premium",
-  UNLIMITED = "Unlimited",
+  BASIC = "basic",
+  PRO = "pro",
+  PREMIUM = "premium",
+  UNLIMITED = "unlimited",
 }
 
 export enum SubscriptionStatus {
