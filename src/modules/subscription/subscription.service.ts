@@ -26,6 +26,19 @@ type CreateCheckoutPayload = {
 //   balance      → { wordSwipe, aiChat, validityDate }
 //   subscription → { subscriptionId, plan, status, startDate, endDate, lastResetDate }
 // ─────────────────────────────────────────────────────────────────────────────
+function normalizePlan(title: string) {
+  if (!title) return "Basic";
+
+  const t = title.toLowerCase();
+
+  if (t === "basic") return "Basic";
+  if (t === "pro") return "Pro";
+  if (t === "premium") return "Premium";
+  if (t === "unlimited") return "Unlimited";
+
+  return "Basic";
+}
+
 function buildUserActivationUpdate(
   planDoc: any,
   currentBalance: { wordSwipe?: number; aiChat?: number } | undefined,
@@ -33,27 +46,21 @@ function buildUserActivationUpdate(
   periodEnd: Date,
   subscriptionDocId: any
 ) {
-  // ✅ allowed enum values (match your SubscriptionPlan enum)
-  const allowedPlans = ["Basic", "Pro", "Premium", "Unlimited"];
-
   const set: Record<string, any> = {
-    // ── subscription block ─────────────────────────────
     "subscription.subscriptionId": String(subscriptionDocId || null),
 
-    "subscription.plan": allowedPlans.includes(planDoc?.title)
-      ? planDoc.title
-      : "Basic",
+    // ✅ FINAL FIX HERE
+    "subscription.plan": normalizePlan(planDoc?.title),
 
     "subscription.status": "active",
     "subscription.startDate": periodStart,
     "subscription.endDate": periodEnd,
     "subscription.lastResetDate": new Date(),
 
-    // ── balance block ─────────────────────────────────
     "balance.validityDate": periodEnd,
   };
 
-  // ✅ wordSwipe credit logic
+  // wordSwipe
   if (planDoc?.credits?.wordSwipe !== undefined) {
     if (planDoc.credits.wordSwipe === -1) {
       set["balance.wordSwipe"] = -1;
@@ -68,7 +75,7 @@ function buildUserActivationUpdate(
     }
   }
 
-  // ✅ aiChat credit logic
+  // aiChat
   if (planDoc?.credits?.aiChat !== undefined) {
     if (planDoc.credits.aiChat === -1) {
       set["balance.aiChat"] = -1;
