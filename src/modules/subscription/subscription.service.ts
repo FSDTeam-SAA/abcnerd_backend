@@ -42,7 +42,7 @@ function buildUserActivationUpdate(
 
     "subscription.plan": allowedPlans.includes(planDoc?.title)
       ? planDoc.title
-      : "Basic",
+      : "basic",
 
     "subscription.status": "active",
     "subscription.startDate": periodStart,
