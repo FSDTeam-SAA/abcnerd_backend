@@ -34,7 +34,7 @@ function buildUserActivationUpdate(
   subscriptionDocId: any
 ) {
   // ✅ allowed enum values (match your SubscriptionPlan enum)
-  const allowedPlans = ["Basic", "Pro", "Premium", "Unlimited"];
+  const allowedPlans = ["basic", "pro", "premium", "unlimited"];
 
   const set: Record<string, any> = {
     // ── subscription block ─────────────────────────────
