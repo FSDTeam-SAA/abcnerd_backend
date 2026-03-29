@@ -49,8 +49,6 @@ function buildUserActivationUpdate(
   const set: Record<string, any> = {
     "subscription.subscriptionId": String(subscriptionDocId || null),
     "subscription.plan": normalizePlan(planDoc?.title),
-
-
     "subscription.status": "active",
     "subscription.startDate": periodStart,
     "subscription.endDate": periodEnd,

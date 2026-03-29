@@ -106,8 +106,8 @@ const userSchema = new Schema<IUser>(
       },
       plan: {
         type: String,
-        enum: Object.values(SubscriptionPlan),
-        default: "basic",
+        // enum: Object.values(SubscriptionPlan),
+        default: "Basic",
       },
       status: {
         type: String,
