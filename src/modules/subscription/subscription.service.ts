@@ -33,17 +33,14 @@ function buildUserActivationUpdate(
   periodEnd: Date,
   subscriptionDocId: any
 ) {
-  // ✅ allowed enum values (match your SubscriptionPlan enum)
-  const allowedPlans = ["Basic", "Pro", "Premium", "Unlimited"];
+  //allowed enum values (match your SubscriptionPlan enum)git 
+  const allowedPlans = ["basic", "pro", "premium", "unlimited"];
 
   const set: Record<string, any> = {
     // ── subscription block ─────────────────────────────
     "subscription.subscriptionId": String(subscriptionDocId || null),
 
-    "subscription.plan": allowedPlans.includes(planDoc?.title)
-      ? planDoc.title
-      : "Basic",
-
+    "subscription.plan": planDoc?.title.toLowerCase(), 
     "subscription.status": "active",
     "subscription.startDate": periodStart,
     "subscription.endDate": periodEnd,
