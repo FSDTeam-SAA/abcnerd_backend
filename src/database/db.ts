@@ -32,7 +32,7 @@ export const connectDatabase = async (): Promise<void> => {
       chalk.yellow(`Database connection successful: ${dbinfo.connection.host}`),
     );
     startBalanceResetCron();
-    //startPingServerCron();
+    startPingServerCron();
     startNotificationCron();
   } catch (error) {
     console.error(chalk.red("Database connection failed!!"), error);
