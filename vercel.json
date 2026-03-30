@@ -1,15 +1,22 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "dist/server.js",
-      "use": "@vercel/node"
+      "source": "/(.*)",
+      "destination": "/api/index.ts"
     }
   ],
-  "routes": [
+  "crons": [
     {
-      "src": "/(.*)",
-      "dest": "dist/server.js"
+      "path": "/api/v1/cron/balance-reset",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/v1/cron/daily-notifications",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/v1/cron/weekly-notifications",
+      "schedule": "30 9 * * 1"
     }
   ]
 }
