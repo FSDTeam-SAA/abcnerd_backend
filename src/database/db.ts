@@ -41,7 +41,7 @@ export const connectDatabase = async (): Promise<void> => {
     // as the process exits after the request finishes. We disable inline crons.
     if (!process.env.VERCEL) {
       startBalanceResetCron();
-      //startPingServerCron();
+      startPingServerCron();
       startNotificationCron();
     }
   } catch (error) {
