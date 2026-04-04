@@ -11,6 +11,11 @@ import { startNotificationCron } from "./notification.cron";
 dotenv.config();
 
 export const connectDatabase = async (): Promise<void> => {
+  if (mongoose.connection.readyState >= 1) {
+    console.log(chalk.gray("Using existing database connection"));
+    return;
+  }
+
   try {
     const mongoUrl = config.mongoUri;
 
@@ -31,11 +36,20 @@ export const connectDatabase = async (): Promise<void> => {
     console.log(
       chalk.yellow(`Database connection successful: ${dbinfo.connection.host}`),
     );
-    startBalanceResetCron();
-    //startPingServerCron();
-    startNotificationCron();
+    
+    // In serverless environments (like Vercel), node-cron will not work
+    // as the process exits after the request finishes. We disable inline crons.
+    if (!process.env.VERCEL) {
+      startBalanceResetCron();
+      //startPingServerCron();
+      startNotificationCron();
+    }
   } catch (error) {
     console.error(chalk.red("Database connection failed!!"), error);
-    process.exit(1); // stop app if DB fails
+    if (!process.env.VERCEL) {
+      process.exit(1); // stop app if DB fails
+    } else {
+      throw error;
+    }
   }
 };
