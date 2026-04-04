@@ -36,7 +36,7 @@ export const connectDatabase = async (): Promise<void> => {
     console.log(
       chalk.yellow(`Database connection successful: ${dbinfo.connection.host}`),
     );
-    
+
     // In serverless environments (like Vercel), node-cron will not work
     // as the process exits after the request finishes. We disable inline crons.
     if (!process.env.VERCEL) {

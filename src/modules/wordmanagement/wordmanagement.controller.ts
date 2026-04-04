@@ -27,6 +27,17 @@ export const getWordmanagementById = asyncHandler(async (req: Request, res: Resp
   ApiResponse.sendSuccess(res, 200, "Wordmanagement fetched", wordmanagement);
 });
 
+//: bulk upload
+export const bulkUpload = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new Error("Please upload a CSV file");
+  }
+
+  const result = await wordmanagementService.bulkUpload(req.file.path);
+
+  ApiResponse.sendSuccess(res, 200, result.message, result);
+});
+
 //: update wordmanagement by wordmanagementId
 export const updateWordmanagement = asyncHandler(async (req: Request, res: Response) => {
   const wordmanagementId = req.params.wordmanagementId as string;
