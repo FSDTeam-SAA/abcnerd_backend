@@ -90,4 +90,10 @@ export const StripeWebhook = asyncHandler(async (req: Request, res: Response) =>
   ApiResponse.sendSuccess(res, 200, "Webhook handled successfully", result);
 });
 
+export const getPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
+  const result = await subscriptionService.getPaymentHistory(req.query);
+  ApiResponse.sendSuccess(res, 200, "Payment history fetched", result.data, result.meta);
+});
+
+
 

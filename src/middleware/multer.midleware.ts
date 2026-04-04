@@ -27,11 +27,24 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) => {
-  const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "image/webp",
+    "text/csv",
+    "application/vnd.ms-excel",
+    "application/csv",
+  ];
   if (!allowedTypes.includes(file.mimetype)) {
-    return cb(new CustomError(400, "Invalid file type", [
-      { field: "image", message: "Only JPEG, PNG, JPG, WEBP are allowed" },
-    ]));
+    return cb(
+      new CustomError(400, "Invalid file type", [
+        {
+          field: file.fieldname,
+          message: "Only JPEG, PNG, JPG, WEBP, and CSV are allowed",
+        },
+      ])
+    );
   }
   cb(null, true);
 };

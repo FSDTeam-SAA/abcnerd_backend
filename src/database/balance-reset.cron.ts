@@ -208,7 +208,7 @@ export const startPingServerCron = (): void => {
   const schedule = "*/8 * * * *"; // every 8 minutes
 
   const urls = [
-    // "https://abcnerd-backend.onrender.com/api/v1/ping", // primary
+    "https://abcnerd-backend.onrender.com/api/v1/ping", // primary
     // "https://abcnerd-backend-v4we.onrender.com/api/v1/ping", // fallback
     "http://localhost:5000/api/v1/ping", // primary
 

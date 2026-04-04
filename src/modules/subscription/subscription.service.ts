@@ -10,6 +10,8 @@ import { getIo } from "../../socket/server";
 import { createNotification } from "../notification/notification.controller";
 import { NotificationModel } from "../notification/notification.models";
 import { NotificationStatus, NotificationType } from "../notification/notification.interface";
+import { paginationHelper } from "../../utils/pagination";
+
 
 type CreateCheckoutPayload = {
   userId: Types.ObjectId | string;
@@ -753,10 +755,94 @@ export const handleStripeWebhook = async (req: any) => {
   return { received: true };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: Get Payment History with filters and search
+// ─────────────────────────────────────────────────────────────────────────────
+export const getPaymentHistory = async (query: any) => {
+  const { page: qPage, limit: qLimit, search, status } = query;
+  const { page, limit, skip } = paginationHelper(qPage, qLimit);
+
+  const pipeline: any[] = [
+    { $match: { isDeleted: false } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $lookup: {
+        from: "subscriptionplans",
+        localField: "planId",
+        foreignField: "_id",
+        as: "plan",
+      },
+    },
+    { $unwind: "$plan" },
+  ];
+
+  // Filters
+  const match: any = {};
+  if (status && status !== "all") {
+    match.status = status;
+  }
+
+  if (search) {
+    match.$or = [
+      { "user.name": { $regex: search, $options: "i" } },
+      { "user.email": { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (Object.keys(match).length > 0) {
+    pipeline.push({ $match: match });
+  }
+
+  // Pagination with Facets
+  pipeline.push({
+    $facet: {
+      metadata: [{ $count: "total" }],
+      data: [
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            userName: "$user.name",
+            email: "$user.email",
+            subscription: "$plan.title",
+            status: 1,
+            createdAt: 1,
+          },
+        },
+      ],
+    },
+  });
+
+  const result = await SubscriptionModel.aggregate(pipeline);
+  const data = result[0].data;
+  const total = result[0].metadata[0]?.total || 0;
+  const totalPage = Math.ceil(total / limit);
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage,
+    },
+  };
+};
+
 export const subscriptionService = {
   createCheckoutSession,
   successPayment,
   createPaymentIntent,
   handleStripeWebhook,
   failedPayment,
+  getPaymentHistory,
 };

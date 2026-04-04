@@ -67,3 +67,4 @@ app.use(globalErrorHandler);
 // Socket.IO setup
 const io = initSocket(server);
 export { io, server };
+export default app;
