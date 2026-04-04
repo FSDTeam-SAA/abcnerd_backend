@@ -815,7 +815,16 @@ export const getPaymentHistory = async (query: any) => {
             email: "$user.email",
             subscription: "$plan.title",
             status: 1,
+            stripeCustomerId: 1,
+            stripeSubscriptionId: 1,
+            currentPeriodStart: 1,
+            currentPeriodEnd: 1,
+            cancelAtPeriodEnd: 1,
+            canceledAt: 1,
+            latestInvoiceId: 1,
+            stripeCheckoutSessionId: 1,
             createdAt: 1,
+            updatedAt: 1,
           },
         },
       ],
@@ -838,6 +847,24 @@ export const getPaymentHistory = async (query: any) => {
   };
 };
 
+export const deletePaymentHistory = async (id: string) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new CustomError(400, "Invalid ID");
+  }
+
+  const result = await SubscriptionModel.findByIdAndUpdate(
+    id,
+    { isDeleted: true },
+    { new: true }
+  );
+
+  if (!result) {
+    throw new CustomError(404, "Payment history not found");
+  }
+
+  return result;
+};
+
 export const subscriptionService = {
   createCheckoutSession,
   successPayment,
@@ -845,4 +872,5 @@ export const subscriptionService = {
   handleStripeWebhook,
   failedPayment,
   getPaymentHistory,
+  deletePaymentHistory,
 };

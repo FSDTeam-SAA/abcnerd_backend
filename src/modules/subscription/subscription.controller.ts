@@ -95,5 +95,8 @@ export const getPaymentHistory = asyncHandler(async (req: Request, res: Response
   ApiResponse.sendSuccess(res, 200, "Payment history fetched", result.data, result.meta);
 });
 
-
-
+export const deletePaymentHistory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params as { id: string };
+  const result = await subscriptionService.deletePaymentHistory(id);
+  ApiResponse.sendSuccess(res, 200, "Payment history deleted successfully", result);
+});
