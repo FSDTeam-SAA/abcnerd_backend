@@ -185,9 +185,9 @@ export const loginWithGoogle = asyncHandler(async (req, res) => {
 
 //: login with kakao auth
 export const loginWithKakao = asyncHandler(async (req, res) => {
-  const { code } = req.body;
+  const { code, redirectUri } = req.body;
   if (!code) throw new Error("Code is missing, please sent code in request body");
-  const { email, name, accessToken, refreshToken } = await userService.loginWithKakao(code);
+  const { email, name, accessToken, refreshToken } = await userService.loginWithKakao(code, redirectUri);
   ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
     email,
     name,

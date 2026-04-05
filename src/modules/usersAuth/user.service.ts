@@ -408,12 +408,12 @@ export const userService = {
     };
   },
 
-  //: login with google
-  async loginWithKakao(code: string) {
+  //: login with kakao
+  async loginWithKakao(code: string, redirectUri?: string) {
     const params = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: config.provider.kakaoClientId as string,
-      redirect_uri: config.provider.kakaoRedirectUri as string,
+      redirect_uri: redirectUri || (config.provider.kakaoRedirectUri as string),
       code,
     });
 
