@@ -60,10 +60,8 @@ export const createPaymentIntent = asyncHandler(async (req: any, res: Response) 
   ApiResponse.sendSuccess(res, 200, "Payment intent created", result);
 });
 
-export const TossWebhook = asyncHandler(async (req: Request, res: Response) => {
-  const result = await subscriptionService.handleTossWebhook(req);
-  ApiResponse.sendSuccess(res, 200, "Webhook handled successfully", result);
-});
+
+
 
 export const getPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
   const result = await subscriptionService.getPaymentHistory(req.query);

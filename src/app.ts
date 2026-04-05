@@ -12,7 +12,7 @@ import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
 import { googleLogin, kakaoLoginPage } from "./Oauth/google";
-import { TossWebhook } from "./modules/subscription/subscription.controller";
+
 // import passport from "./Oauth/passport/kakao"; // not use a midlleware
 
 const app = express();
@@ -37,10 +37,7 @@ app.use(
   }),
 );
 app.use(express.json());
-app.post(
-  "/api/v1/payment/webhook",
-  TossWebhook,
-);
+
 app.get("/api/v1/ping", (req, res) => {
   res.json({
     success: true,
