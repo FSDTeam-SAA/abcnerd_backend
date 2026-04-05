@@ -137,6 +137,9 @@ const userSchema = new Schema<IUser>(
     refreshToken: {
       type: String,
     },
+    fcmToken: {
+      type: String,
+    },
     resetPassword: {
       otp: {
         type: String,

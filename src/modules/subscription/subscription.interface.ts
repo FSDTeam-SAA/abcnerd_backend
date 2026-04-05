@@ -29,6 +29,11 @@ export interface ISubscription {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripeCheckoutSessionId?: string;
+  
+  // Toss Payments references
+  tossBillingKey?: string;
+  tossCustomerKey?: string;
+  tossPaymentKey?: string;
 
   // optional audit/debug
   latestInvoiceId?: string;

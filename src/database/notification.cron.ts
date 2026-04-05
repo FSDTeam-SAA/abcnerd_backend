@@ -2,8 +2,8 @@ import cron from "node-cron";
 import chalk from "chalk";
 import { userModel } from "../modules/usersAuth/user.models";
 import { Progress } from "../modules/progress/progress.models";
-import { NotificationModel } from "../modules/notification/notification.models";
 import { NotificationType } from "../modules/notification/notification.interface";
+import { NotificationModel } from "../modules/notification/notification.models";
 
 export const runDailyNotifications = async (): Promise<void> => {
   try {

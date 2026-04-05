@@ -56,6 +56,7 @@ export interface IUser extends Document {
   };
 
   refreshToken: string | null;
+  fcmToken?: string;
   resetPassword: {
     otp: string | null;
     otpExpire: Date | null;

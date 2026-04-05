@@ -517,5 +517,15 @@ export const userService = {
 
     return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
 
+  },
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { fcmToken },
+      { new: true }
+    );
+    if (!user) throw new CustomError(404, "User not found");
+    return user;
   }
 };
