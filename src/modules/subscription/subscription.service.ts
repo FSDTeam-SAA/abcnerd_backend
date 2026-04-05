@@ -299,42 +299,7 @@ export const createPaymentIntent = async (payload: CreateCheckoutPayload) => {
   return createCheckoutSession(payload);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Toss Webhook Handler (with server-side verification)
-// ─────────────────────────────────────────────────────────────────────────────
-export const handleTossWebhook = async (req: any) => {
-  const event = req.body;
-  console.log("[Toss Webhook] Received event:", event.eventType);
 
-  // 1. Handle Payment Status Changes
-  if (event.eventType === "PAYMENT_STATUS_CHANGED") {
-    const { paymentKey, status, orderId } = event.data;
-
-    if (status === "DONE") {
-      // ✅ SERVER VERIFICATION: Fetch payment details directly from Toss
-      const verifiedPayment = await tossPayments.getPayment(paymentKey) as any;
-
-      if (verifiedPayment.status === "DONE") {
-        // Find subscription by customerKey (if available in metadata) or orderId
-        // In this implementation, we mostly use customerKey = user_{userId}
-        const subscription = await SubscriptionModel.findOne({
-          tossCustomerKey: verifiedPayment.customerKey,
-          status: "pending",
-          isDeleted: false,
-        })
-          .populate("planId")
-          .exec();
-
-        if (subscription) {
-          console.log(`[Toss Webhook] Activating subscription for order ${orderId} via webhook.`);
-          await activateSubscriptionInternal(subscription, verifiedPayment);
-        }
-      }
-    }
-  }
-
-  return { received: true };
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin: Get Payment History with filters and search
@@ -449,8 +414,7 @@ export const subscriptionService = {
   createCheckoutSession,
   successPayment,
   createPaymentIntent,
-  handleTossWebhook,
   failedPayment,
   getPaymentHistory,
   deletePaymentHistory,
-};
+};
