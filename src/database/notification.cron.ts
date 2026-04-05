@@ -2,10 +2,10 @@ import cron from "node-cron";
 import chalk from "chalk";
 import { userModel } from "../modules/usersAuth/user.models";
 import { Progress } from "../modules/progress/progress.models";
-import { notificationService } from "../modules/notification/notification.service";
 import { NotificationType } from "../modules/notification/notification.interface";
+import { NotificationModel } from "../modules/notification/notification.models";
 
-export const runDailyNotifications = async () => {
+export const runDailyNotifications = async (): Promise<void> => {
   try {
     console.log(chalk.cyan(`[NotificationCron] Running daily at ${new Date().toISOString()}`));
     
@@ -15,7 +15,7 @@ export const runDailyNotifications = async () => {
       // A. Word Review Notifications
       const progress = await Progress.findOne({ user: user._id });
       if (progress && progress.reviewLater && progress.reviewLater.length > 0) {
-        await notificationService.createNotification({
+        await NotificationModel.create({
           receiverId: user._id.toString(),
           title: "Word Review Time",
           description: `There are ${progress.reviewLater.length} words to review. Check them out now.`,
@@ -24,7 +24,7 @@ export const runDailyNotifications = async () => {
       }
 
       // B. AI Chat Mission Notification
-      await notificationService.createNotification({
+      await NotificationModel.create({
         receiverId: user._id.toString(),
         title: "New Mission",
         description: "The AI chat mission has arrived.",
@@ -39,7 +39,7 @@ export const runDailyNotifications = async () => {
   }
 };
 
-export const runWeeklyNotifications = async () => {
+export const runWeeklyNotifications = async (): Promise<void> => {
   try {
     console.log(chalk.cyan(`[NotificationCron] Running weekly at ${new Date().toISOString()}`));
     
@@ -47,7 +47,7 @@ export const runWeeklyNotifications = async () => {
 
     for (const user of allUsers) {
       // C. Weekly Quiz Notification
-      await notificationService.createNotification({
+      await NotificationModel.create({
         receiverId: user._id.toString(),
         title: "New Quiz Available",
         description: "A new weekly quiz has been updated.",
@@ -64,10 +64,14 @@ export const runWeeklyNotifications = async () => {
 
 export const startNotificationCron = (): void => {
   // 1. Daily Cron Job (09:00 UTC)
-  cron.schedule("0 9 * * *", runDailyNotifications, { timezone: "UTC" });
+  cron.schedule("0 9 * * *", async () => {
+    await runDailyNotifications();
+  }, { timezone: "UTC" });
 
   // 2. Weekly Cron Job (Every Monday at 09:30 UTC)
-  cron.schedule("30 9 * * 1", runWeeklyNotifications, { timezone: "UTC" });
+  cron.schedule("30 9 * * 1", async () => {
+    await runWeeklyNotifications();
+  }, { timezone: "UTC" });
 
   console.log(chalk.magenta(`[NotificationCron] Cron scheduled for App Notifications.`));
 };

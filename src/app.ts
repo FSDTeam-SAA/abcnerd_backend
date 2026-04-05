@@ -12,7 +12,7 @@ import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
 import { googleLogin, kakaoLoginPage } from "./Oauth/google";
-import { StripeWebhook } from "./modules/subscription/subscription.controller";
+import { TossWebhook } from "./modules/subscription/subscription.controller";
 // import passport from "./Oauth/passport/kakao"; // not use a midlleware
 
 const app = express();
@@ -36,10 +36,10 @@ app.use(
     credentials: true,
   }),
 );
+app.use(express.json());
 app.post(
   "/api/v1/payment/webhook",
-  express.raw({ type: "application/json" }),
-  StripeWebhook,
+  TossWebhook,
 );
 app.get("/api/v1/ping", (req, res) => {
   res.json({
@@ -49,7 +49,6 @@ app.get("/api/v1/ping", (req, res) => {
   });
 });
 app.use(cookieParser());
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // app.use(passport.initialize())
 

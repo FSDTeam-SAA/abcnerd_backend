@@ -54,11 +54,6 @@ const config = {
     appPassword: process.env.APP_PASSWORD as string,
   },
 
-  /* ================= Stripe ================= */
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY as string,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET as string,
-  },
 
 
   //redis
@@ -79,6 +74,10 @@ const config = {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     privateKey: (process.env.FIREBASE_PRIVATE_KEY as string)?.replace(/\\n/g, "\n"),
+  },
+  toss: {
+    secretKey: process.env.TOSS_SECRET_KEY,
+    clientKey: process.env.TOSS_CLIENT_KEY,
   },
 };
 

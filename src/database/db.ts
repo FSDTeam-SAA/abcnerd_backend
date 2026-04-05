@@ -7,6 +7,7 @@ import {
   startPingServerCron,
 } from "./balance-reset.cron";
 import { startNotificationCron } from "./notification.cron";
+import { startSubscriptionBillingCron } from "./subscription-billing.cron";
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ export const connectDatabase = async (): Promise<void> => {
       startBalanceResetCron();
       startPingServerCron();
       startNotificationCron();
+      startSubscriptionBillingCron();
     }
   } catch (error) {
     console.error(chalk.red("Database connection failed!!"), error);
