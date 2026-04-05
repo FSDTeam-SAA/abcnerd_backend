@@ -37,9 +37,9 @@ export interface ICreateSubscriptionPlan {
   stripePriceId: string;
   stripeProductId?: string;
 
-  limits: {
-    swipePerDay: number;
-    aiConversationsPerDay: number;
+  credits: {
+    wordSwipe: number;
+    aiChat: number;
   };
 
   status?: PlanStatus;
