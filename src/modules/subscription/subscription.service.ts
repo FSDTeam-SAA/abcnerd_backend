@@ -132,10 +132,12 @@ export const createCheckoutSession = async (payload: CreateCheckoutPayload) => {
       planId: new Types.ObjectId(plan._id),
       status: "pending",
       tossCustomerKey: customerKey,
+      tossOrderId: orderId,
     });
   } else {
     sub.planId = new Types.ObjectId(plan._id);
     sub.tossCustomerKey = customerKey;
+    sub.tossOrderId = orderId;
     await sub.save();
   }
 
@@ -238,19 +240,15 @@ async function activateSubscriptionInternal(subscription: any, tossPaymentDetail
 // Success payment (called from controller after redirect from Toss Checkout)
 // ─────────────────────────────────────────────────────────────────────────────
 export const successPayment = async (query: any) => {
-  const { authKey, customerKey } = query;
+  const { paymentKey, orderId, amount } = query;
 
-  if (!authKey || !customerKey) {
-    throw new CustomError(400, "authKey and customerKey are required");
+  if (!paymentKey || !orderId || !amount) {
+    throw new CustomError(400, "paymentKey, orderId, and amount are required");
   }
 
-  // 1. Issue Billing Key from Toss
-  const billingData = await tossPayments.issueBillingKey(authKey, customerKey);
-  const { billingKey } = billingData as any;
-
-  // 2. Find internal subscription
+  // 1. Find internal subscription pending state using the saved orderId
   const subscription = await SubscriptionModel.findOne({
-    tossCustomerKey: customerKey,
+    tossOrderId: orderId,
     isDeleted: false,
     status: "pending",
   })
@@ -258,23 +256,24 @@ export const successPayment = async (query: any) => {
     .exec();
 
   if (!subscription) {
-    throw new CustomError(404, "Subscription not found");
+    throw new CustomError(404, "Subscription checkout session not found");
   }
 
   const plan = subscription.planId as any;
-  const orderId = `initial_${crypto.randomBytes(8).toString("hex")}`;
 
-  // 3. Perform Initial Charge (First month/year)
-  const payment = await tossPayments.chargeBillingKey({
-    billingKey,
-    customerKey,
-    orderId,
-    amount: plan.price,
-    orderName: `${plan.title} Plan Initial Charge`,
-  });
+  // 2. We use standard confirmPayment for mock Toss requests
+  let payment: any = null;
+  try {
+    payment = await tossPayments.confirmPayment(paymentKey, orderId, Math.round(Number(amount)));
+  } catch (chargeErr: any) {
+    throw new CustomError(400, `Payment verification failed: ${chargeErr?.response?.data?.message || chargeErr?.message}`);
+  }
 
-  // 4. Use shared activation helper
-  return activateSubscriptionInternal(subscription, { ...(payment as any), billingKey });
+  // 3. Mark the toss payment key to the subscription
+  subscription.tossPaymentKey = paymentKey;
+
+  // 4. Activate subscription (idempotent helper handles socket emit + user update)
+  return activateSubscriptionInternal(subscription, payment);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -417,4 +416,4 @@ export const subscriptionService = {
   failedPayment,
   getPaymentHistory,
   deletePaymentHistory,
-};
+};

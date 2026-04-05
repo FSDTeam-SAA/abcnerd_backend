@@ -34,6 +34,7 @@ export interface ISubscription {
   tossBillingKey?: string;
   tossCustomerKey?: string;
   tossPaymentKey?: string;
+  tossOrderId?: string;
 
   // optional audit/debug
   latestInvoiceId?: string;

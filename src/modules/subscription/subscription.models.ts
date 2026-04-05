@@ -42,6 +42,7 @@ const subscriptionSchema = new Schema<ISubscription>(
     tossBillingKey: { type: String, index: true },
     tossCustomerKey: { type: String, index: true },
     tossPaymentKey: { type: String },
+    tossOrderId: { type: String, index: true },
 
     isDeleted: { type: Boolean, default: false },
   },
