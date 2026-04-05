@@ -95,11 +95,18 @@ subscriptionplanSchema.pre("save", async function (next) {
 
 // Generate slug on update
 subscriptionplanSchema.pre("findOneAndUpdate", async function () {
+  const query = this.getQuery();
   const update = this.getUpdate() as any;
 
-  const category = await SubscriptionPlanModel.findOne({ title: update.title, isDeleted: false });
-  if (category) {
-    throw new CustomError(400, "SubscriptionPlan already exist");
+  if (update?.title) {
+    const existingPlan = await SubscriptionPlanModel.findOne({
+      title: update.title,
+      isDeleted: false,
+      _id: { $ne: query._id },
+    });
+    if (existingPlan) {
+      throw new CustomError(400, "SubscriptionPlan with this title already exists");
+    }
   }
 
   if (update?.title) {
@@ -109,7 +116,6 @@ subscriptionplanSchema.pre("findOneAndUpdate", async function () {
       trim: true,
     });
   }
-
 });
 
 export const SubscriptionPlanModel = mongoose.model<ISubscriptionPlan>("SubscriptionPlan", subscriptionplanSchema);
