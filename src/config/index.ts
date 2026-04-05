@@ -75,6 +75,11 @@ const config = {
     max: Number(process.env.RATE_LIMIT_MAX) || 100,
     delay: Number(process.env.RATE_LIMIT_DELAY) || 50,
   },
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: (process.env.FIREBASE_PRIVATE_KEY as string)?.replace(/\\n/g, "\n"),
+  },
 };
 
 export default config;

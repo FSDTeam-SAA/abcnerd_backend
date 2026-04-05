@@ -208,3 +208,17 @@ export const loginWithApple = asyncHandler(async (req, res) => {
     refreshToken
   });
 });
+
+//: update fcm token
+export const updateFcmToken = asyncHandler(async (req, res) => {
+  const { _id: userId } = req.user as any;
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    throw new CustomError(400, "FCM token is required");
+  }
+
+  await userService.updateFcmToken(userId, fcmToken);
+
+  ApiResponse.sendSuccess(res, 200, "FCM token updated successfully");
+});
