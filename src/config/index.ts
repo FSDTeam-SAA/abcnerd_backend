@@ -54,6 +54,20 @@ const config = {
     appPassword: process.env.APP_PASSWORD as string,
   },
 
+  brevo: {
+    host: process.env.BREVO_SMTP_HOST as string,
+    port: Number(process.env.BREVO_SMTP_PORT) || 587,
+    auth: {
+      user: process.env.BREVO_SMTP_USER as string,
+      pass: process.env.BREVO_SMTP_PASS as string,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    senderEmail: process.env.BREVO_SENDER_EMAIL || process.env.HOST_MAIL,
+    senderName: process.env.BREVO_SENDER_NAME || "SwipeLang",
+  },
+
 
 
   //redis
