@@ -422,16 +422,19 @@ export const userService = {
       params.append("client_secret", config.provider.kakaoClientSecret);
     }
 
-    const tokenResponse = await axios.post(
-      "https://kauth.kakao.com/oauth/token",
-      params.toString(),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
-    );
-
-    if (tokenResponse.status !== 200) {
-      throw new Error("Failed to get access token");
+    let tokenResponse;
+    try {
+      tokenResponse = await axios.post(
+        "https://kauth.kakao.com/oauth/token",
+        params.toString(),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
+    } catch (error: any) {
+      console.error("Kakao Token Error:", error.response?.data || error.message);
+      const kakaoError = error.response?.data?.error_description || "Failed to get access token from Kakao";
+      throw new Error(kakaoError);
     }
 
     const { access_token } = tokenResponse.data as { access_token: string };
