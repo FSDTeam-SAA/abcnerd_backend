@@ -17,6 +17,7 @@ import {
   getalluser,
   getmyprofile,
   getSingleUser,
+  updateFcmToken,
 } from "./user.controller";
 import { allowRole, authGuard } from "../../middleware/auth.middleware";
 import { upload } from "../../middleware/multer.midleware";
@@ -109,5 +110,8 @@ router.post("/login-with-kakao", loginWithKakao);
 
 //apple login
 router.post("/login-with-apple", loginWithApple);
+
+// fcm token update
+router.patch("/fcm-token", authGuard as any, updateFcmToken);
 
 export const userRoute = router;

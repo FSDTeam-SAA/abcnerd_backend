@@ -24,19 +24,12 @@ export const authGuard = async (
 ): Promise<void> => {
   try {
     const accessToken =
-      req.cookies?.accessToken ||
+      // req.cookies?.accessToken ||
       req.headers?.authorization?.split("Bearer ")[1];
 
     if (!accessToken) {
       throw new CustomError(401, "Access token not found!");
     }
-
-    // // ✅ NEW: Check if token is blacklisted
-    // const isBlacklisted =
-    //   await redisTokenService.isTokenBlacklisted(accessToken);
-    // if (isBlacklisted) {
-    //   throw new CustomError(401, "Token has been revoked. Please login again.");
-    // }
 
     const decoded = jwt.verify(
       accessToken,

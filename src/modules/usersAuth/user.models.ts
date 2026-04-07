@@ -106,8 +106,8 @@ const userSchema = new Schema<IUser>(
       },
       plan: {
         type: String,
-        enum: Object.values(SubscriptionPlan),
-        default: null,
+        // enum: Object.values(SubscriptionPlan),
+        default: "Basic",
       },
       status: {
         type: String,
@@ -135,6 +135,9 @@ const userSchema = new Schema<IUser>(
       // index: { expires: 0 },
     },
     refreshToken: {
+      type: String,
+    },
+    fcmToken: {
       type: String,
     },
     resetPassword: {
@@ -188,7 +191,7 @@ userSchema.methods.comparePassword = async function (
   return await bcrypt.compare(password, this.password);
 };
 
-// Change password method
+// update password method
 userSchema.methods.updatePassword = async function (
   currentPassword: string,
   newPassword: string,

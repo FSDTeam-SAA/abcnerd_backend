@@ -1,10 +1,9 @@
+import fs from "fs";
 import { WordmanagementModel } from "./wordmanagement.models";
-import { ICreateWordmanagement } from "./wordmanagement.interface";
+import { ICreateWordmanagement, WordType } from "./wordmanagement.interface";
 import CustomError from "../../helpers/CustomError";
-import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
-
-//: customize as needed
+import { CategoryWordModel } from "../categoryword/categoryword.models";
 
 const createWordmanagement = async (data: ICreateWordmanagement) => {
   const item = await WordmanagementModel.create(data);
@@ -24,7 +23,7 @@ const getAllWordmanagements = async (req: any) => {
     search,
   } = req.query;
 
-  const { role } = req?.user;
+  const role = req?.user?.role;
 
   // Pagination
   const { page, limit, skip } = paginationHelper(pagebody, limitbody);
@@ -142,4 +141,140 @@ const deleteWordmanagement = async (wordmanagementId: string) => {
   return wordmanagement;
 };
 
-export const wordmanagementService = { createWordmanagement, getAllWordmanagements, getWordmanagementById, updateWordmanagement, deleteWordmanagement };
+const bulkUpload = async (filePath: string) => {
+  const fileContent = fs.readFileSync(filePath, "utf-8");
+  const lines = fileContent.split(/\r?\n/);
+
+  if (lines.length < 2) {
+    throw new CustomError(400, "CSV file is empty or missing data rows");
+  }
+
+  // Fetch all categories for mapping
+  const categories = await CategoryWordModel.find({});
+  const categoryMap = new Map();
+  let defaultCategory = categories[0];
+
+  categories.forEach((cat) => {
+    categoryMap.set(cat.name.toLowerCase(), cat._id);
+    if (cat.name.toLowerCase() === "default") {
+      defaultCategory = cat;
+    }
+  });
+
+  if (!defaultCategory && categories.length === 0) {
+    throw new CustomError(400, "No categories found in the database. Please create at least one category first.");
+  }
+
+  const bulkData: any[] = [];
+
+  // Simple CSV parser that handles quotes
+  const parseCSVLine = (line: string) => {
+    const result = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') { // escaped quote ""
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === "," && !inQuotes) {
+        result.push(cur.trim());
+        cur = "";
+      } else {
+        cur += char;
+      }
+    }
+    result.push(cur.trim());
+    return result;
+  };
+
+  // Skip header (lines[0])
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+
+    const columns = parseCSVLine(line);
+
+    const word = columns[1];
+    const description = columns[2];
+    const exampleStr = columns[3];
+    const categoryName = columns[4];
+    const tagsStr = columns[5];
+
+    if (!word || !description) continue;
+
+    const examples = exampleStr ? [exampleStr] : [];
+    const tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
+
+    // Add categoryName to tags if it doesn't match a category
+    let categoryWordId = defaultCategory?._id;
+    if (categoryName) {
+      const existingCatId = categoryMap.get(categoryName.toLowerCase());
+      if (existingCatId) {
+        categoryWordId = existingCatId;
+      } else {
+        tags.push(categoryName);
+      }
+    }
+
+    bulkData.push({
+      word,
+      description,
+      examples,
+      categoryWordId,
+      tags,
+      wordType: WordType.ENTIRE, // Default word type
+      status: "active"
+    });
+  }
+
+  if (bulkData.length === 0) {
+    throw new CustomError(400, "No valid data found in CSV");
+  }
+
+  // Fetch existing words to skip duplicates
+  const existingWords = await WordmanagementModel.find({
+    word: { $in: bulkData.map(d => d.word) }
+  }).select("word");
+  const existingSet = new Set(existingWords.map(w => w.word.toLowerCase()));
+
+  const finalData = bulkData.filter(d => !existingSet.has(d.word.toLowerCase()));
+  const totalSkipped = bulkData.length - finalData.length;
+
+  if (finalData.length === 0 && totalSkipped > 0) {
+    return {
+      count: 0,
+      message: `0 words uploaded, ${totalSkipped} duplicates skipped`
+    };
+  }
+
+  if (finalData.length === 0) {
+    throw new CustomError(400, "No valid data found in CSV");
+  }
+
+  // Use create to trigger pre-save middleware (slug, categoryType, etc.)
+  const items = await WordmanagementModel.create(finalData);
+
+  // Clean up file
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+
+  return {
+    count: items.length,
+    message: `${items.length} words uploaded successfully, ${totalSkipped} duplicates skipped`
+  };
+};
+
+export const wordmanagementService = {
+  createWordmanagement,
+  getAllWordmanagements,
+  getWordmanagementById,
+  updateWordmanagement,
+  deleteWordmanagement,
+  bulkUpload
+};

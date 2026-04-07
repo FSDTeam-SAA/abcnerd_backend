@@ -37,6 +37,12 @@ const subscriptionSchema = new Schema<ISubscription>(
     // optional audit/debug
     latestInvoiceId: { type: String },
     latestPaymentIntentId: { type: String },
+    
+    // Toss Payments
+    tossBillingKey: { type: String, index: true },
+    tossCustomerKey: { type: String, index: true },
+    tossPaymentKey: { type: String },
+    tossOrderId: { type: String, index: true },
 
     isDeleted: { type: Boolean, default: false },
   },
@@ -60,6 +66,16 @@ subscriptionSchema.index(
 
 subscriptionSchema.index(
   { stripeCheckoutSessionId: 1 },
+  { unique: true, sparse: true }
+);
+
+subscriptionSchema.index(
+  { tossBillingKey: 1 },
+  { unique: true, sparse: true }
+);
+
+subscriptionSchema.index(
+  { tossCustomerKey: 1 },
   { unique: true, sparse: true }
 );
 

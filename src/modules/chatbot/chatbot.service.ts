@@ -28,7 +28,7 @@ Rules:
 - If user asks meaning + examples, respond with short meaning + real-life usage examples.
 `;
 
-const MODEL = "gemini-2 .5-flash";
+const MODEL = "gemini-2.5-flash";
 const MAX_OUTPUT_TOKENS = 2048;
 const TEMPERATURE = 0.9;
 const MAX_HISTORY_CHARS = 12000;
@@ -91,20 +91,13 @@ const buildDayFilter = (identity: IChatIdentity, dayKey: string) => {
   };
 };
 
-const getUserVocabularyContext = async (
-  userId?: Types.ObjectId | string,
-): Promise<string> => {
+const getUserVocabularyContext = async (userId?: Types.ObjectId | string): Promise<string> => {
   if (!userId) return "";
   try {
     const Progress = (await import("../progress/progress.models")).Progress;
-    const p = await Progress.findOne({ user: userId })
-      .populate("memorized", "word")
-      .lean();
+    const p = await Progress.findOne({ user: userId }).populate("memorized", "word").lean();
     if (!p || !p.memorized?.length) return "";
-    const words = (p.memorized as any[])
-      .map((w) => w.word)
-      .slice(-10)
-      .join(", ");
+    const words = (p.memorized as any[]).map(w => w.word).slice(-10).join(", ");
     return `\n\nUser's recently learned vocabulary: ${words}. Try to use these if relevant.`;
   } catch (e) {
     return "";

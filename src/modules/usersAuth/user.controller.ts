@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import ApiResponse from "../../utils/apiResponse";
 import config from "../../config";
 import { userService } from "./user.service";
+import CustomError from "../../helpers/CustomError";
 
 //: Register user
 export const registration = asyncHandler(async (req, res) => {
@@ -121,7 +122,7 @@ export const logout = asyncHandler(async (req: Request, res: Response
 //: forget password
 export const forgetPassword = asyncHandler(async (req, res) => {
   const user = await userService.forgetPassword(req.body.email);
-  ApiResponse.sendSuccess(res, 200, "Reset link sent to email", {
+  ApiResponse.sendSuccess(res, 200, "Reset password otp sent to your email", {
     email: user.email,
     name: user.name,
     message: "Reset password otp sent to your email",
@@ -152,8 +153,12 @@ export const resetPassword = asyncHandler(async (req, res) => {
 //: generate access token
 export const generateAccessToken = asyncHandler(async (req, res) => {
   const refreshToken =
-    req.cookies?.refreshToken ||
-    req.headers.refreshtoken?.toString().split("Bearer ")[1];
+    // req.cookies?.refreshToken ||
+    req.headers?.authorization?.toString().split("Bearer ")[1];
+
+  if (!refreshToken) {
+    throw new CustomError(401, "Refresh token not found");
+  }
 
   const accessToken = await userService.generateAccessToken(refreshToken);
 
@@ -180,9 +185,9 @@ export const loginWithGoogle = asyncHandler(async (req, res) => {
 
 //: login with kakao auth
 export const loginWithKakao = asyncHandler(async (req, res) => {
-  const { code } = req.body;
+  const { code, redirectUri } = req.body;
   if (!code) throw new Error("Code is missing, please sent code in request body");
-  const { email, name, accessToken, refreshToken } = await userService.loginWithKakao(code);
+  const { email, name, accessToken, refreshToken } = await userService.loginWithKakao(code, redirectUri);
   ApiResponse.sendSuccess(res, 200, "Logged in successfully", {
     email,
     name,
@@ -203,3 +208,17 @@ export const loginWithApple = asyncHandler(async (req, res) => {
     refreshToken
   });
 });
+
+//: update fcm token
+export const updateFcmToken = asyncHandler(async (req, res) => {
+  const { _id: userId } = req.user as any;
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    throw new CustomError(400, "FCM token is required");
+  }
+
+  await userService.updateFcmToken(userId, fcmToken);
+
+  ApiResponse.sendSuccess(res, 200, "FCM token updated successfully");
+});

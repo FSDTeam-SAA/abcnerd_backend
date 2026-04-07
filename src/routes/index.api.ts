@@ -18,6 +18,7 @@ import questionRoute from "../modules/question/question.routes";
 import leaderboardRoute from "../modules/leaderboard/leaderboard.routes";
 import { VideoRoutes } from "../modules/video/video.routes";
 import { UserVideoProgressRoutes } from "../modules/uservideoprogress/uservideoprogress.routes";
+import { cronRoutes } from "../modules/cron/cron.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -37,5 +38,6 @@ router.use("/quiz-attempt", quizattemptRoute);
 router.use("/question", questionRoute);
 router.use("/notebook", notebookRoute);
 router.use("/leaderboard", leaderboardRoute);
+router.use("/cron", cronRoutes);
 
 export default router;

@@ -3,11 +3,28 @@ import { ICreateNotification } from "./notification.interface";
 import CustomError from "../../helpers/CustomError";
 import { uploadCloudinary } from "../../helpers/cloudinary";
 import { paginationHelper } from "../../utils/pagination";
+import { userModel } from "../usersAuth/user.models";
+import { sendPushNotification } from "../../helpers/fcm";
 
 //: customize as needed
 
 const createNotification = async (data: ICreateNotification) => {
   const item = await NotificationModel.create(data);
+
+  // Send push notification if user has an FCM token
+  try {
+    const user = await userModel.findById(data.receiverId).select("fcmToken");
+    if (user?.fcmToken) {
+      await sendPushNotification(
+        user.fcmToken,
+        data.title,
+        data.description || ""
+      );
+    }
+  } catch (error) {
+    console.error("Error sending push notification in createNotification:", error);
+  }
+
   return item;
 };
 

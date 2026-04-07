@@ -87,15 +87,15 @@ export const updateSubscriptionPlanSchema = z.object({
     .transform((val) => val.trim())
     .optional(),
 
-  limits: z
+  credits: z
     .object({
-      swipePerDay: z
+      wordSwipe: z
         .number()
         .int()
         .min(-1, "Use -1 for unlimited")
         .optional(),
 
-      aiConversationsPerDay: z
+      aiChat: z
         .number()
         .int()
         .min(-1, "Use -1 for unlimited")

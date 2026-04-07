@@ -68,10 +68,7 @@ export const userService = {
     if (!user) throw new CustomError(400, "user not found");
 
     //check account status
-    // if (!user.isVerified) throw new CustomError(400, "Account not verified");
-
-
-    const isPasswordMatch = await bcryptjs.compare(password, user.password);
+    const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) throw new CustomError(400, "incorrect password");
 
     user.rememberMe = rememberMe;
@@ -249,7 +246,7 @@ export const userService = {
     const { email } = req?.user as { email: string };
     const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
 
-    const user = await userModel.findOne({ email: email });
+    const user = await userModel.findOne({ email: email }).select("+password");
     if (!user) {
       throw new CustomError(404, "User not found");
     }
@@ -324,17 +321,19 @@ export const userService = {
     if (!decoded) throw new CustomError(400, "Invalid token");
 
     //find user
-    const user = await userModel.findOne({ email: decoded.email });
+    const user = await userModel.findOne({ email: decoded.email }).select("+password");
     if (!user) throw new CustomError(400, "User not found");
 
     if (!user.resetPassword.token) throw new CustomError(400, "There is no request to reset password");
 
-    //update password
+    if (user.resetPassword.token !== token) throw new CustomError(400, "Invalid token");
 
     //password compare can't be same as old
-    const isMatch = await user.comparePassword(password);
-    if (isMatch) {
-      throw new CustomError(400, "New password must be not similar as old password");
+    if (user.password) {
+      const isMatch = await user.comparePassword(password);
+      if (isMatch) {
+        throw new CustomError(400, "New password must be not similar as old password");
+      }
     }
 
     user.password = password;
@@ -409,12 +408,12 @@ export const userService = {
     };
   },
 
-  //: login with google
-  async loginWithKakao(code: string) {
+  //: login with kakao
+  async loginWithKakao(code: string, redirectUri?: string) {
     const params = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: config.provider.kakaoClientId as string,
-      redirect_uri: config.provider.kakaoRedirectUri as string,
+      redirect_uri: redirectUri || (config.provider.kakaoRedirectUri as string),
       code,
     });
 
@@ -423,16 +422,19 @@ export const userService = {
       params.append("client_secret", config.provider.kakaoClientSecret);
     }
 
-    const tokenResponse = await axios.post(
-      "https://kauth.kakao.com/oauth/token",
-      params.toString(),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
-    );
-
-    if (tokenResponse.status !== 200) {
-      throw new Error("Failed to get access token");
+    let tokenResponse;
+    try {
+      tokenResponse = await axios.post(
+        "https://kauth.kakao.com/oauth/token",
+        params.toString(),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
+    } catch (error: any) {
+      console.error("Kakao Token Error:", error.response?.data || error.message);
+      const kakaoError = error.response?.data?.error_description || "Failed to get access token from Kakao";
+      throw new Error(kakaoError);
     }
 
     const { access_token } = tokenResponse.data as { access_token: string };
@@ -518,5 +520,15 @@ export const userService = {
 
     return { email, name, accessToken: jwtAccessToken, refreshToken: jwtRefreshToken };
 
+  },
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { fcmToken },
+      { new: true }
+    );
+    if (!user) throw new CustomError(404, "User not found");
+    return user;
   }
 };

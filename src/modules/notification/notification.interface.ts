@@ -12,24 +12,28 @@ export enum NotificationType {
   QUIZ = "quiz",
   MISSION = "mission",
   PAYMENT = "payment",
+  SUBSCRIPTION = "SUBSCRIPTION",
+  WORD_REVIEW = "word_review",
+  AI_CHAT_MISSION = "ai_chat_mission",
+  WEEKLY_QUIZ = "weekly_quiz",
 }
-    
-    export interface INotification {
-      _id: string;
 
-      receiverId: string;
-      senderId?: string;       // optional (admin or system)
+export interface INotification {
+  _id: string;
 
-      title: string;
-      description?: string;
+  receiverId: string;
+  senderId?: string;       // optional (admin or system)
 
-      type: NotificationType;
+  title: string;
+  description?: string;
 
-      status: NotificationStatus;
+  type: NotificationType;
 
-      createdAt: Date;
-      updatedAt: Date;
-  
+  status: NotificationStatus;
+
+  createdAt: Date;
+  updatedAt: Date;
+
 }
 
 export interface ICreateNotification {
