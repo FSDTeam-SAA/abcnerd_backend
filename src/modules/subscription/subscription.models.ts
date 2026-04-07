@@ -39,10 +39,9 @@ const subscriptionSchema = new Schema<ISubscription>(
     latestPaymentIntentId: { type: String },
 
     // Toss Payments
-    //tossBillingKey: { type: String, index: true },
-    // tossCustomerKey: { type: String, index: true },
-    tossBillingKey: { type: String },
-    tossCustomerKey: { type: String },
+    tossBillingKey: { type: String, index: true },
+    tossCustomerKey: { type: String, index: true },
+
     tossPaymentKey: { type: String },
     tossOrderId: { type: String, index: true },
 
