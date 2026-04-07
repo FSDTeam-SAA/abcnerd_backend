@@ -17,18 +17,19 @@ interface CloudinaryUploadResult {
   secure_url: string;
 }
 
-//Upload to Cloudinary =
+//Upload to Cloudinary
 
 export const uploadCloudinary = async (
-  filePath: string
+  filePath: string,
+  resourceType: "image" | "video" = "image",
 ): Promise<CloudinaryUploadResult> => {
   try {
     if (!filePath || !fs.existsSync(filePath as string)) {
-      throw new CustomError(400, "Image path missing");
+      throw new CustomError(400, "File path missing");
     }
 
     const cloudinaryResponse = await cloudinary.uploader.upload(filePath, {
-      resource_type: "image",
+      resource_type: resourceType,
       quality: "auto",
     });
 
@@ -46,22 +47,27 @@ export const uploadCloudinary = async (
 
     throw new CustomError(
       500,
-      `Failed to upload image: ${error?.message ?? "Unknown error"}`
+      `Failed to upload file: ${error?.message ?? "Unknown error"}`,
     );
   }
 };
 
 // Delete from Cloudinary
 
-export const deleteCloudinary = async (publicId: string): Promise<unknown> => {
+export const deleteCloudinary = async (
+  publicId: string,
+  resourceType: "image" | "video" = "image",
+): Promise<unknown> => {
   try {
-    return await cloudinary.uploader.destroy(publicId);
+    return await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
   } catch (error: any) {
     throw new CustomError(
       500,
-      `Failed to delete image from Cloudinary: ${
+      `Failed to delete file from Cloudinary: ${
         error?.message ?? "Unknown error"
-      }`
+      }`,
     );
   }
 };
