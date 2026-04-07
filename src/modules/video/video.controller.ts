@@ -15,7 +15,7 @@ export const createVideo = asyncHandler(async (req: Request, res: Response) => {
   if (!filePath) {
     throw new Error("Video file is required");
   }
-  
+
   const video = await createVideoService(req.body, filePath);
   console.log("response from service");
 
@@ -30,7 +30,7 @@ export const getCategoryVideos = asyncHandler(
       throw new Error("Category ID is required");
     }
 
-    const videos = await getCategoryVideosService(categoryId);
+    const videos = await getCategoryVideosService(categoryId as string);
 
     ApiResponse.sendSuccess(res, 200, "Videos fetched successfully", videos);
   },
@@ -43,7 +43,7 @@ export const updateVideo = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Video ID not found in params");
   }
 
-  const video = await updateVideoService(videoId, req.body);
+  const video = await updateVideoService(videoId as string, req.body);
 
   ApiResponse.sendSuccess(res, 200, "Video updated successfully", video);
 });
@@ -55,7 +55,7 @@ export const deleteVideo = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Video ID not found in params");
   }
 
-  const result = await deleteVideoService(videoId);
+  const result = await deleteVideoService(videoId as string);
 
   ApiResponse.sendSuccess(
     res,

@@ -8,7 +8,7 @@ export const createVideoService = async (
   payload: IVideoCreate,
   filePath: string,
 ) => {
-  const { title, categoryId } = payload; 
+  const { title, categoryId } = payload;
 
   // last order খোঁজো
   const lastVideo = await VideoModel.findOne({ category: categoryId })

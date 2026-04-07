@@ -20,7 +20,7 @@ export const getNextVideo = asyncHandler(
       throw new Error("Category ID is required");
     }
 
-    const video = await getNextVideoService(userId, categoryId);
+    const video = await getNextVideoService(userId, categoryId as string);
 
     ApiResponse.sendSuccess(
       res,
@@ -41,7 +41,7 @@ export const markVideoComplete = asyncHandler(
       throw new Error("Video ID is required");
     }
 
-    const progress = await markVideoCompleteService(userId, videoId);
+    const progress = await markVideoCompleteService(userId, videoId as string);
 
     ApiResponse.sendSuccess(res, 200, "Video marked as completed", progress);
   },
@@ -56,7 +56,7 @@ export const skipVideo = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Video ID is required");
   }
 
-  const progress = await skipVideoService(userId, videoId);
+  const progress = await skipVideoService(userId, videoId as string);
 
   ApiResponse.sendSuccess(res, 200, "Video skipped", progress);
 });
@@ -73,7 +73,7 @@ export const getUserCategoryProgress = asyncHandler(
 
     const progressList = await getUserCategoryProgressService(
       userId,
-      categoryId,
+      categoryId as string,
     );
 
     ApiResponse.sendSuccess(
