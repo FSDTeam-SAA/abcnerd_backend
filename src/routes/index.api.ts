@@ -16,6 +16,8 @@ import notebookRoute from "../modules/notebook/notebook.routes";
 import { chatbotRoute } from "../modules/chatbot/chatbot.routes";
 import questionRoute from "../modules/question/question.routes";
 import leaderboardRoute from "../modules/leaderboard/leaderboard.routes";
+import { VideoRoutes } from "../modules/video/video.routes";
+import { UserVideoProgressRoutes } from "../modules/uservideoprogress/uservideoprogress.routes";
 
 router.use("/user", userRoute);
 router.use("/categoryword", categorywordRoute);
@@ -25,7 +27,8 @@ router.use("/progress", progressRoute);
 router.use("/notification", notificationRoute);
 router.use("/invoice", invoiceRoute);
 router.use("/chatbot", chatbotRoute);
-
+router.use("/video", VideoRoutes);
+router.use("/user-video-progress", UserVideoProgressRoutes);
 //!Only payment routes are below
 router.use("/subscriptionplan", subscriptionplanRoute);
 router.use("/payment", subscriptionRoute);

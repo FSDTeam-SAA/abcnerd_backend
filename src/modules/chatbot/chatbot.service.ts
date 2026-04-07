@@ -3,11 +3,18 @@ import { GoogleGenAI } from "@google/genai";
 import { Types } from "mongoose";
 import CustomError from "../../helpers/CustomError";
 import config from "../../config";
-import type { ChatHistory, IChatIdentity, IChatResponse } from "./chatbot.interface";
+import type {
+  ChatHistory,
+  IChatIdentity,
+  IChatResponse,
+} from "./chatbot.interface";
 import { DailyChatHistoryModel } from "./chatbot.models";
 import { NotificationModel } from "../notification/notification.models";
 import { getIo } from "../../socket/server";
-import { NotificationStatus, NotificationType } from "../notification/notification.interface";
+import {
+  NotificationStatus,
+  NotificationType,
+} from "../notification/notification.interface";
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
@@ -21,7 +28,7 @@ Rules:
 - If user asks meaning + examples, respond with short meaning + real-life usage examples.
 `;
 
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-2 .5-flash";
 const MAX_OUTPUT_TOKENS = 2048;
 const TEMPERATURE = 0.9;
 const MAX_HISTORY_CHARS = 12000;
@@ -50,7 +57,7 @@ const getDayKeyUTC = (date = new Date()): string => {
 // Trims chat history to fit within the max character limit, starting from the most recent messages.
 const trimHistoryByChars = (
   history: ChatHistory,
-  maxChars = MAX_HISTORY_CHARS
+  maxChars = MAX_HISTORY_CHARS,
 ): ChatHistory => {
   let total = 0;
   const kept: ChatHistory = [];
@@ -84,17 +91,24 @@ const buildDayFilter = (identity: IChatIdentity, dayKey: string) => {
   };
 };
 
-const getUserVocabularyContext = async (userId?: Types.ObjectId | string): Promise<string> => {
-    if (!userId) return "";
-    try {
-        const Progress = (await import("../progress/progress.models")).Progress;
-        const p = await Progress.findOne({ user: userId }).populate("memorized", "word").lean();
-        if (!p || !p.memorized?.length) return "";
-        const words = (p.memorized as any[]).map(w => w.word).slice(-10).join(", ");
-        return `\n\nUser's recently learned vocabulary: ${words}. Try to use these if relevant.`;
-    } catch (e) {
-        return "";
-    }
+const getUserVocabularyContext = async (
+  userId?: Types.ObjectId | string,
+): Promise<string> => {
+  if (!userId) return "";
+  try {
+    const Progress = (await import("../progress/progress.models")).Progress;
+    const p = await Progress.findOne({ user: userId })
+      .populate("memorized", "word")
+      .lean();
+    if (!p || !p.memorized?.length) return "";
+    const words = (p.memorized as any[])
+      .map((w) => w.word)
+      .slice(-10)
+      .join(", ");
+    return `\n\nUser's recently learned vocabulary: ${words}. Try to use these if relevant.`;
+  } catch (e) {
+    return "";
+  }
 };
 
 // Retrieves today's chat doc for the user, or creates it if it doesn't exist.
@@ -109,14 +123,15 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const dayDoc = await DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
 
   // Trigger first-chat notification only when document is newly created
   if (!existing && identity.userId) {
     const userId = String(identity.userId);
     const title = "AI chat mission arrived";
-    const description = "Your daily speaking mission is ready! Chat with AI to complete it.";
+    const description =
+      "Your daily speaking mission is ready! Chat with AI to complete it.";
 
     const notif = await NotificationModel.create({
       receiverId: userId,
@@ -140,7 +155,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
 // One-shot chat — sends the message without prior context. Persists both user and AI turns to the DB.
 const chat = async (
   message: string,
-  identity: IChatIdentity = {}
+  identity: IChatIdentity = {},
 ): Promise<IChatResponse> => {
   if (!message?.trim()) throw new CustomError(400, "Message is required");
 
@@ -167,7 +182,7 @@ const chat = async (
   }
   (dayDoc as any).messages.push(
     { role: "user", parts: [{ text: message }] },
-    { role: "model", parts: [{ text: aiResponse }] }
+    { role: "model", parts: [{ text: aiResponse }] },
   );
   await (dayDoc as any).save();
   return { response: aiResponse };
@@ -176,7 +191,7 @@ const chat = async (
 // Context-aware chat — loads today's history as context and sends it with the message. Persists both user and AI turns to the DB.
 const chatWithHistory = async (
   message: string,
-  identity: IChatIdentity = {}
+  identity: IChatIdentity = {},
 ): Promise<IChatResponse> => {
   if (!message?.trim()) throw new CustomError(400, "Message is required");
 
@@ -190,7 +205,9 @@ const chatWithHistory = async (
   if (!(dayDoc as any).messages) {
     (dayDoc as any).messages = [];
   }
-  const trimmedHistory = trimHistoryByChars((dayDoc as any).messages as ChatHistory);
+  const trimmedHistory = trimHistoryByChars(
+    (dayDoc as any).messages as ChatHistory,
+  );
 
   const vocabContext = await getUserVocabularyContext(identity.userId);
 
@@ -202,9 +219,9 @@ const chatWithHistory = async (
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       },
-      history: trimmedHistory.map(msg => ({
+      history: trimmedHistory.map((msg) => ({
         role: msg.role === "model" ? "model" : "user",
-        parts: msg.parts.map(p => ({ text: p.text })),
+        parts: msg.parts.map((p) => ({ text: p.text })),
       })),
     });
 
@@ -214,7 +231,7 @@ const chatWithHistory = async (
 
   (dayDoc as any).messages.push(
     { role: "user", parts: [{ text: message }] },
-    { role: "model", parts: [{ text: aiResponse }] }
+    { role: "model", parts: [{ text: aiResponse }] },
   );
   await (dayDoc as any).save();
 
@@ -242,7 +259,7 @@ const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $set: { isDeleted: true } },
-    { new: true }
+    { new: true },
   );
 };
 
