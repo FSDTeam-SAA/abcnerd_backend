@@ -37,10 +37,12 @@ const subscriptionSchema = new Schema<ISubscription>(
     // optional audit/debug
     latestInvoiceId: { type: String },
     latestPaymentIntentId: { type: String },
-    
+
     // Toss Payments
-    tossBillingKey: { type: String, index: true },
-    tossCustomerKey: { type: String, index: true },
+    //tossBillingKey: { type: String, index: true },
+    // tossCustomerKey: { type: String, index: true },
+    tossBillingKey: { type: String },
+    tossCustomerKey: { type: String },
     tossPaymentKey: { type: String },
     tossOrderId: { type: String, index: true },
 
