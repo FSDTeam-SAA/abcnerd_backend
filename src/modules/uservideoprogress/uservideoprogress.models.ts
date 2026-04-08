@@ -37,7 +37,7 @@ const userVideoProgressSchema = new Schema<IUserVideoProgress>(
   { timestamps: true },
 );
 
-// একজন user একটা video তে একটাই progress record থাকবে
+// each user has only one progress record per video
 userVideoProgressSchema.index({ user: 1, video: 1 }, { unique: true });
 
 export const UserVideoProgressModel = model<IUserVideoProgress>(

@@ -105,7 +105,7 @@ const videoFileFilter = (
 };
 
 const videoUpload = multer({
-  storage, // same diskStorage — public/temp এ save হবে
+  storage, // same diskStorage — will save to public/temp
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
   fileFilter: videoFileFilter,
 });

@@ -15,7 +15,7 @@ export interface IProgress {
   memorized: Types.ObjectId[];
   reviewLater: Types.ObjectId[];
   markFavorite: Types.ObjectId[];
-  attemptedQuestions: Types.ObjectId[]; // already attempt করা question গুলো
+  attemptedQuestions: Types.ObjectId[]; // questions that were already attempted
   streak: number;
   score: number;
   lastActionDate: Date | null;

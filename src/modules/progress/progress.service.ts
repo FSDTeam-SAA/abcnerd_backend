@@ -34,7 +34,7 @@ export const getProgressService = async (userId: Types.ObjectId) => {
   };
 };
 
-// ── 2. Memorized বা ReviewLater word গুলো details সহ ──
+// ── 2. Get details for memorized or reviewLater words ──
 export const getProgressWordsService = async (
   userId: Types.ObjectId,
   type: "memorized" | "reviewLater",
