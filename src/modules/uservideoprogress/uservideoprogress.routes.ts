@@ -10,10 +10,10 @@ import { permission } from "../../middleware/permission.middleware";
 
 const router = Router();
 
-// Session এ প্রতি 10 word পর call হবে
+// called every 10 words in session
 router.get("/next/:categoryId", authGuard, permission(["user"]), getNextVideo);
 
-// User video দেখল
+// User watched a video
 router.patch(
   "/:videoId/complete",
   authGuard,
@@ -21,10 +21,10 @@ router.patch(
   markVideoComplete,
 );
 
-// User video skip করল
+// User skipped a video
 router.patch("/:videoId/skip", authGuard, permission(["user"]), skipVideo);
 
-// Category র সব video র progress (dashboard)
+// progress of all category videos (dashboard)
 router.get(
   "/progress/:categoryId",
   authGuard,

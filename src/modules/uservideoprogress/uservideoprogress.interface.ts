@@ -11,6 +11,6 @@ export interface IUserVideoProgress {
   watchedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-  availableAt: Date; // এই date এর আগে video দেখাবে না
+  availableAt: Date; // video is not available before this date
   watchCount: number;
 }

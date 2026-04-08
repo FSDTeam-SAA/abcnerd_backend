@@ -34,7 +34,7 @@ const videoSchema = new Schema<IVideo>(
   { timestamps: true },
 );
 
-// একই category তে order unique রাখতে
+// ensure unique order within the same category
 videoSchema.index({ category: 1, order: 1 }, { unique: true });
 
 export const VideoModel = model<IVideo>("Video", videoSchema);

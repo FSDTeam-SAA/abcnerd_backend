@@ -185,28 +185,146 @@ export const accountVerificationOtpEmailTemplate = (name: string, otp: string): 
 export const otpEmailTemplate = (name: string, otp: string): string => {
   return `
 <!DOCTYPE html>
-<html>
-<body style="font-family: Arial, sans-serif; background:#f4f6f8; padding:40px;">
-  <div style="max-width:600px; margin:auto; background:#fff; padding:30px; border-radius:8px;">
-    <h2 style="color:#2563eb; text-align:center;">Password Reset OTP</h2>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
 
-    <p>Hi <strong>${name}</strong>,</p>
+    .wrapper {
+      padding: 40px 16px;
+    }
 
-    <p>We received a request to reset your password. Use the OTP below to proceed:</p>
+    .card {
+      max-width: 520px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
 
-    <div style="text-align:center; margin:30px 0;">
-      <span style="font-size:28px; font-weight:bold; color:#2563eb; letter-spacing:2px;">
-        ${otp}
-      </span>
+    .top-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    }
+
+    .content {
+      padding: 40px 32px;
+      color: #1f2937;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .content p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 16px;
+      color: #4b5563;
+    }
+
+    .otp-section {
+      text-align: center;
+      margin: 32px 0;
+      padding: 24px;
+      background-color: #f9fafb;
+      border-radius: 12px;
+      border: 1px dashed #c0c4cc;
+    }
+
+    .otp-label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .otp {
+      display: inline-block;
+      font-size: 36px;
+      letter-spacing: 6px;
+      font-weight: 800;
+      color: #111827;
+      margin: 0;
+    }
+
+    .expiry-note {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    .security-note {
+      font-size: 13px;
+      color: #6b7280;
+      padding-top: 24px;
+      border-top: 1px solid #f3f4f6;
+      margin-top: 32px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: #9ca3af;
+      background: #f9fafb;
+      border-top: 1px solid #f3f4f6;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="top-bar"></div>
+
+      <div class="content">
+        <div class="header-title">Password Reset</div>
+
+        <p>Hi <strong>${name}</strong>,</p>
+
+        <p>
+          We received a request to reset your password. Please use the secure verification code below to authorize this change.
+        </p>
+
+        <div class="otp-section">
+          <div class="otp-label">Verification Code</div>
+          <div class="otp">${otp}</div>
+          <div class="expiry-note">
+            ⏳ Valid for 2 minutes only
+          </div>
+        </div>
+
+        <p>
+          For your safety, never share this code with anyone. Our support team will never ask for your verification code.
+        </p>
+
+        <div class="security-note">
+          <strong>Didn't request this?</strong><br/>
+          If you didn't ask to reset your password, you can safely ignore this email. Your account remains completely secure and your password has not been changed.
+        </div>
+      </div>
+
+      <div class="footer">
+        This is an automated email. Please do not reply.
+      </div>
     </div>
-
-    <p style="color:#dc2626; font-weight:600;">
-      This OTP is valid for 1 minute only.
-    </p>
-
-    <p>If you didn’t request a password reset, please ignore this email.</p>
-
-    <p>— SwipeLang Team</p>
   </div>
 </body>
 </html>

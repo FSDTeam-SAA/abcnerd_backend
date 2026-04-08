@@ -24,7 +24,7 @@ const progressSchema = new Schema<IProgress>(
     memorized: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
     reviewLater: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
     markFavorite: [{ type: Schema.Types.ObjectId, ref: "Wordmanagement" }],
-    attemptedQuestions: [{ type: Schema.Types.ObjectId }], // question _id গুলো
+    attemptedQuestions: [{ type: Schema.Types.ObjectId }], // question _ids
     streak: { type: Number, default: 0 },
     score: { type: Number, default: 0 },
     lastActionDate: { type: Date, default: null },

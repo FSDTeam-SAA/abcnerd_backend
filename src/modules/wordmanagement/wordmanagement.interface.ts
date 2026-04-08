@@ -29,7 +29,7 @@ export interface IWordmanagement {
   examples?: string[];
 
   categoryWordId: Types.ObjectId;
-  categoryType?: string; // categoryWord এর name
+  categoryType?: string; // categoryWord name
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;

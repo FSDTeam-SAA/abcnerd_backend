@@ -3,14 +3,14 @@ import { uploadCloudinary, deleteCloudinary } from "../../helpers/cloudinary";
 import CustomError from "../../helpers/CustomError";
 import { VideoModel } from "./video.models";
 
-// Admin: video upload করে create
+// Admin: create video by uploading
 export const createVideoService = async (
   payload: IVideoCreate,
   filePath: string,
 ) => {
   const { title, categoryId } = payload;
 
-  // last order খোঁজো
+  // find the last order
   const lastVideo = await VideoModel.findOne({ category: categoryId })
     .sort({ order: -1 })
     .select("order");
@@ -42,7 +42,7 @@ const uploadVideo = async (filePath: string, videoId: string) => {
   });
 };
 
-// Admin: category র সব video দেখা
+// Admin: view all videos in the category
 export const getCategoryVideosService = async (categoryId: string) => {
   return await VideoModel.find({ category: categoryId, isActive: true }).sort({
     order: 1,

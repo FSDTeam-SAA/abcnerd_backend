@@ -39,7 +39,7 @@ export const submitQuizService = async (
     if (!question)
       throw new CustomError(404, `Question not found: ${answer.questionId}`);
 
-    // এই question টা এই quiz এর অংশ কিনা check
+    // check whether this question is part of the quiz
     if (!quiz.questions.map((q) => q.toString()).includes(answer.questionId))
       throw new CustomError(
         400,
@@ -100,14 +100,14 @@ export const submitQuizService = async (
     attempt: attempt._id,
   });
 
-  // Progress এ attemptedQuestions update
+  // update attemptedQuestions in progress
   await Progress.findOneAndUpdate(
     { user: userId },
     { $addToSet: { attemptedQuestions: { $each: newAttemptedIds } } },
     { upsert: true },
   );
 
-  // Wrong answers notebook এ save
+  // save wrong answers to notebook
   if (wrongAnswers.length > 0) {
     await NotebookModel.findOneAndUpdate(
       { user: userId },

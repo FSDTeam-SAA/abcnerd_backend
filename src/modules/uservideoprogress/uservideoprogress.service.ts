@@ -4,7 +4,7 @@ import CustomError from "../../helpers/CustomError";
 import { VideoModel } from "../video/video.models";
 import { UserVideoProgressModel } from "./uservideoprogress.models";
 
-// Session শেষে পরবর্তী video খুঁজে দেওয়া
+// Find next video after session
 export const getNextVideoService = async (
   userId: Types.ObjectId,
   categoryId: string,
@@ -16,35 +16,35 @@ export const getNextVideoService = async (
     isActive: true,
   }).sort({ order: 1 });
 
-  // available videos খোঁজো
+  // look for available videos
   for (const video of videos) {
     const progress = await UserVideoProgressModel.findOne({
       user: userId,
       video: video._id,
     });
 
-    // কখনো দেখা হয়নি → দাও
+    // not watched yet → return it
     if (!progress) return video;
 
     // completed → skip
     if (progress.status === "completed") continue;
 
-    // skipped কিন্তু availableAt এখনো হয়নি → skip
+    // skipped but availableAt not reached yet → skip
     if (progress.status === "skipped" && progress.availableAt > now) continue;
 
-    // skipped কিন্তু availableAt পার হয়েছে → দাও
+    // skipped but availableAt has passed → return it
     return video;
   }
 
-  // সব video completed বা cooldown এ → reset করো
+  // all videos completed or in cooldown → reset progress
   await resetCategoryProgressService(userId, categoryId);
 
-  // reset এর পর প্রথম video দাও
+  // after reset, return the first video
   const firstVideo = videos[0];
   return firstVideo ?? null;
 };
 
-// User video দেখল
+// User watched a video
 export const markVideoCompleteService = async (
   userId: Types.ObjectId,
   videoId: string,
@@ -64,7 +64,7 @@ export const markVideoCompleteService = async (
   return progress;
 };
 
-// User video skip করল
+// User skipped a video
 export const skipVideoService = async (
   userId: Types.ObjectId,
   videoId: string,
@@ -75,14 +75,14 @@ export const skipVideoService = async (
     video: videoId,
   });
 
-  // প্রথমবার skip
+  // first skip
   if (!existing) {
     return await UserVideoProgressModel.create({
       user: userId,
       video: videoId,
       status: "skipped",
       skipCount: 1,
-      availableAt: now, // এখনই available, পরের cycle এ আসবে
+      availableAt: now, // available now, next cycle will handle it
     });
   }
 
@@ -93,7 +93,7 @@ export const skipVideoService = async (
   existing.skipCount += 1;
   existing.status = "skipped";
 
-  // 2 বার skip → 2 দিন পর
+  // skipped twice → available after 2 days
   if (existing.skipCount >= 2) {
     const twoDaysLater = new Date();
     twoDaysLater.setDate(twoDaysLater.getDate() + 2);
@@ -104,7 +104,7 @@ export const skipVideoService = async (
   return existing;
 };
 
-// User এর একটা category র সব video progress
+// progress for all videos in a user's category
 export const getUserCategoryProgressService = async (
   userId: Types.ObjectId,
   categoryId: string,
@@ -119,7 +119,7 @@ export const getUserCategoryProgressService = async (
     video: { $in: videos.map((v) => v._id) },
   });
 
-  // video গুলোর সাথে progress merge করে দাও
+  // merge progress with videos
   return videos.map((video) => {
     const progress = progressList.find(
       (p) => p.video.toString() === video._id.toString(),
@@ -143,19 +143,19 @@ export const resetCategoryProgressService = async (
   });
   const videoIds = videos.map((v) => v._id);
 
-  // completed গুলো reset → pending, কিন্তু watchCount ও watchedAt রাখো
+  // reset completed videos to pending, but keep watchCount and watchedAt
   await UserVideoProgressModel.updateMany(
     { user: userId, video: { $in: videoIds }, status: "completed" },
     {
       $set: {
         status: "pending",
-        availableAt: new Date(), // এখনই available
+        availableAt: new Date(), // available immediately
       },
-      // watchCount ও watchedAt touch করছি না
+      // do not update watchCount or watchedAt
     },
   );
 
-  // skipped গুলোও reset
+  // reset skipped videos too
   await UserVideoProgressModel.updateMany(
     { user: userId, video: { $in: videoIds }, status: "skipped" },
     {

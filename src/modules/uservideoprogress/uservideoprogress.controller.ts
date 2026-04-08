@@ -10,10 +10,10 @@ import {
   getUserCategoryProgressService,
 } from "./uservideoprogress.service";
 
-// Session এ প্রতি 10 word পর frontend এই call করবে
+// frontend will call this every 10 words in session
 export const getNextVideo = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = req.user?._id as Types.ObjectId; // Auth middleware theke asche
+    const userId = req.user?._id as Types.ObjectId; // comes from auth middleware
     const { categoryId } = req.params;
 
     if (!categoryId) {
@@ -31,7 +31,7 @@ export const getNextVideo = asyncHandler(
   },
 );
 
-// User video দেখল
+// User watched a video
 export const markVideoComplete = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id as Types.ObjectId;
@@ -47,7 +47,7 @@ export const markVideoComplete = asyncHandler(
   },
 );
 
-// User video skip করল
+// User skipped a video
 export const skipVideo = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?._id as Types.ObjectId;
   const { videoId } = req.params;
@@ -61,7 +61,7 @@ export const skipVideo = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.sendSuccess(res, 200, "Video skipped", progress);
 });
 
-// User এর category র সব video progress
+// all video progress for user's category
 export const getUserCategoryProgress = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id as Types.ObjectId;
