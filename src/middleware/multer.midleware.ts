@@ -25,7 +25,7 @@ const storage: StorageEngine = multer.diskStorage({
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
-  cb: FileFilterCallback
+  cb: FileFilterCallback,
 ) => {
   const allowedTypes = [
     "image/jpeg",
@@ -39,11 +39,8 @@ const fileFilter = (
   if (!allowedTypes.includes(file.mimetype)) {
     return cb(
       new CustomError(400, "Invalid file type", [
-        {
-          field: file.fieldname,
-          message: "Only JPEG, PNG, JPG, WEBP, and CSV are allowed",
-        },
-      ])
+        { field: "image", message: "Only JPEG, PNG, JPG, WEBP are allowed" },
+      ]),
     );
   }
   cb(null, true);
@@ -52,35 +49,86 @@ const fileFilter = (
 // Multer instance
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 1MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter,
 });
 
 // Middleware wrapper to catch Multer errors
 export const uploadSingle =
-  (fieldName: string) =>
-    (req: Request, res: Response, next: NextFunction) => {
-      const singleUpload = upload.single(fieldName);
+  (fieldName: string) => (req: Request, res: Response, next: NextFunction) => {
+    const singleUpload = upload.single(fieldName);
 
-      singleUpload(req, res, (err) => {
-        if (err) {
-          // Multer file size limit
-          if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
-            return next(
-              new CustomError(400, "File too large. Maximum size is 1MB", [
-                { field: fieldName, message: "File too large. Maximum size is 5MB" },
-              ])
-            );
-          }
-
-          // Custom errors from fileFilter
-          if (err instanceof CustomError) {
-            return next(err);
-          }
-
-          // Other errors
-          return next(new CustomError(400, err.message));
+    singleUpload(req, res, (err) => {
+      if (err) {
+        // Multer file size limit
+        if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
+          return next(
+            new CustomError(400, "File too large. Maximum size is 5MB", [
+              {
+                field: fieldName,
+                message: "File too large. Maximum size is 5MB",
+              },
+            ]),
+          );
         }
-        next();
-      });
-    };
+
+        // Custom errors from fileFilter
+        if (err instanceof CustomError) {
+          return next(err);
+        }
+
+        // Other errors
+        return next(new CustomError(400, err.message));
+      }
+      next();
+    });
+  };
+
+// ─────────────────────────────────────────────
+// Video Upload (new — existing code untouched)
+// ─────────────────────────────────────────────
+
+const videoFileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: FileFilterCallback,
+) => {
+  const allowedTypes = ["video/mp4", "video/webm", "video/quicktime"];
+  if (!allowedTypes.includes(file.mimetype)) {
+    return cb(
+      new CustomError(400, "Invalid file type", [
+        { field: "video", message: "Only MP4, WEBM, MOV are allowed" },
+      ]),
+    );
+  }
+  cb(null, true);
+};
+
+const videoUpload = multer({
+  storage, // same diskStorage — will save to public/temp
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  fileFilter: videoFileFilter,
+});
+
+export const uploadVideoSingle =
+  (fieldName: string) => (req: Request, res: Response, next: NextFunction) => {
+    const singleUpload = videoUpload.single(fieldName);
+
+    singleUpload(req, res, (err) => {
+      if (err) {
+        if (err instanceof MulterError && err.code === "LIMIT_FILE_SIZE") {
+          return next(
+            new CustomError(400, "File too large. Maximum size is 500MB", [
+              {
+                field: fieldName,
+                message: "File too large. Maximum size is 500MB",
+              },
+            ]),
+          );
+        }
+        if (err instanceof CustomError) return next(err);
+        return next(new CustomError(400, err.message));
+      }
+      next();
+    });
+  };

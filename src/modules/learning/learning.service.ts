@@ -133,19 +133,7 @@ export const wordActionService = async (
 
   const session = await Learning.findOne({ user: userId, isActive: true });
   const dailyGoal = session?.dailyGoal || 0;
-  if (action === "memorized" && session) {
-    const newMemorizedWords = (session.memorizedWords || 0) + 1;
-    const completionPercentage =
-      dailyGoal > 0
-        ? Math.min(100, Math.round((newMemorizedWords / dailyGoal) * 100))
-        : 0;
 
-    await Learning.findByIdAndUpdate(session._id, {
-      $inc: { swipeCount: 1 },
-      memorizedWords: newMemorizedWords,
-      completionPercentage,
-    });
-  }
   const existingStat = userProgress?.dailyStat;
   const isSameDay =
     existingStat?.date &&
@@ -262,7 +250,11 @@ export const wordActionService = async (
     { new: true },
   );
 
-  return { progress, shouldShowVideo };
+  return {
+    progress,
+    shouldShowVideo,
+    learningCategory: session?.learningCategory ?? null,
+  };
 };
 
 export const getActiveSessionService = async (userId: Types.ObjectId) => {
