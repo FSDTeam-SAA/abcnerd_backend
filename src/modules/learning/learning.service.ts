@@ -69,7 +69,10 @@ export const fetchLearningWordsService = async (
   ];
 
   const words = await WordmanagementModel.find({
-    categoryWordId: categoryDoc._id,
+    $or: [
+      { categoryWordId: categoryDoc._id },
+      { categoryType: categoryDoc.name }
+    ],
     status: "active",
     wordType: wordType,
     _id: { $nin: excludedIds.map((id: any) => id.toString()) },

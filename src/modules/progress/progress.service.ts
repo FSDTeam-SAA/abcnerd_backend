@@ -4,6 +4,7 @@ import CustomError from "../../helpers/CustomError";
 import { Progress } from "./progress.models";
 import { WordType } from "../wordmanagement/wordmanagement.interface";
 import { WordmanagementModel } from "../wordmanagement/wordmanagement.models";
+import { CategoryWordModel } from "../categoryword/categoryword.models";
 import { paginationHelper } from "../../utils/pagination";
 import { userModel } from "../usersAuth/user.models";
 
@@ -101,7 +102,18 @@ export const getReviewLaterService = async (req: any) => {
   // category type filter
 
   if (categoryType) {
-    filter.categoryType = categoryType;
+    const categoryDoc = await CategoryWordModel.findOne({ name: categoryType });
+    if (categoryDoc) {
+      if (!filter.$and) filter.$and = [];
+      filter.$and.push({
+        $or: [
+          { categoryWordId: categoryDoc._id },
+          { categoryType: categoryType }
+        ]
+      });
+    } else {
+      filter.categoryWordId = null;
+    }
   }
 
   //word type filter
@@ -138,8 +150,9 @@ export const getReviewLaterService = async (req: any) => {
   const [words, totalReviewLater] = await Promise.all([
     WordmanagementModel.find(filter)
       .select(
-        "word synonyms description examples pronunciation slug wordType categoryType status createdAt",
+        "word synonyms description examples pronunciation slug wordType categoryWordId status createdAt",
       )
+      .populate("categoryWordId", "_id name")
       .sort({ createdAt: sortValue })
       .skip(skip)
       .limit(limit),

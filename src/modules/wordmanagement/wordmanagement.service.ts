@@ -51,7 +51,18 @@ const getAllWordmanagements = async (req: any) => {
   /* ================= CATEGORY TYPE FILTER ================= */
 
   if (categoryType) {
-    filter.categoryType = categoryType;
+    const categoryDoc = await CategoryWordModel.findOne({ name: categoryType });
+    if (categoryDoc) {
+      if (!filter.$and) filter.$and = [];
+      filter.$and.push({
+        $or: [
+          { categoryWordId: categoryDoc._id },
+          { categoryType: categoryType }
+        ]
+      });
+    } else {
+      filter.categoryWordId = null; 
+    }
   }
 
   /* ================= WORD SEARCH ================= */
@@ -80,7 +91,10 @@ const getAllWordmanagements = async (req: any) => {
   const wordmanagements = await WordmanagementModel.find(filter)
     .sort({ createdAt: sortValue })
     .skip(skip)
-    .limit(limit);
+    .limit(limit).populate("categoryWordId", "_id name");
+
+  console.log(wordmanagements);
+
 
   //count the total number of wordmanagements
   const totalWordmanagements = await WordmanagementModel.countDocuments(filter);

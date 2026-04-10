@@ -29,7 +29,6 @@ export interface IWordmanagement {
   examples?: string[];
 
   categoryWordId: Types.ObjectId;
-  categoryType?: string; // categoryWord এর name
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;

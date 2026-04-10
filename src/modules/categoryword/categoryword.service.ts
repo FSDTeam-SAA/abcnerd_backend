@@ -61,36 +61,46 @@ const getAllCategoryWords = async (req: any) => {
 
   const total = await CategoryWordModel.countDocuments(filter);
 
-  if (role !== "admin" && req?.user?._id) {
-    const { Progress } = await import("../progress/progress.models");
-    const { WordmanagementModel } = await import("../wordmanagement/wordmanagement.models");
-    
-    const userId = req.user._id;
-    const progress = await Progress.findOne({ user: userId });
-    const memorizedIds = progress?.memorized || [];
-    const memorizedStrs = memorizedIds.map((id: any) => id.toString());
+  const { Progress } = await import("../progress/progress.models");
+  const { WordmanagementModel } = await import("../wordmanagement/wordmanagement.models");
+  const mongoose = await import("mongoose");
 
-    categoryWords = await Promise.all(
-      categoryWords.map(async (cat: any) => {
-        const totalWord = await WordmanagementModel.countDocuments({
-          categoryWordId: cat._id,
-          status: "active"
-        });
-        
-        const learnedWord = await WordmanagementModel.countDocuments({
-          categoryWordId: cat._id,
-          status: "active",
+  let memorizedStrs: string[] = [];
+  if (req?.user?._id) {
+    const progress = await Progress.findOne({ user: req.user._id });
+    const memorizedIds = progress?.memorized || [];
+    memorizedStrs = memorizedIds.map((id: any) => id.toString());
+  }
+
+  categoryWords = await Promise.all(
+    categoryWords.map(async (cat: any) => {
+      const catId = new mongoose.Types.ObjectId(cat._id.toString());
+
+      const totalWord = await WordmanagementModel.countDocuments({
+        $or: [
+          { categoryWordId: catId },
+          { categoryType: cat.name }
+        ]
+      });
+
+      let learnedWord = 0;
+      if (memorizedStrs.length > 0) {
+        learnedWord = await WordmanagementModel.countDocuments({
+          $or: [
+            { categoryWordId: catId },
+            { categoryType: cat.name }
+          ],
           _id: { $in: memorizedStrs }
         });
+      }
 
-        return {
-          ...cat,
-          totalWord,
-          learnedWord
-        };
-      })
-    );
-  }
+      return {
+        ...cat,
+        totalWord,
+        learnedWord
+      };
+    })
+  );
 
   return {
     categoryWords,

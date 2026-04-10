@@ -46,11 +46,11 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
       index: true,
     },
 
-    categoryType: {
-      type: String,
-      trim: true,
-      default: null,
-    },
+    // categoryType: {
+    //   type: String,
+    //   trim: true,
+    //   default: null,
+    // },
 
     /* Classification */
     wordType: {
@@ -99,26 +99,7 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
   }
 );
 
-//find categoryWord by id and set categoryType pre middleware
-wordmanagementSchema.pre("save", async function () {
-  const category: any = await CategoryWordModel.findById(this.categoryWordId).select("name");
-  if (!category) throw new CustomError(400, "CategoryWord not found, use valid categoryWordId");
-  if (category) {
-    this.categoryType = category.name
-  }
-})
-
-//find categoryWord by id and update categoryType pre middleware
-wordmanagementSchema.pre("findOneAndUpdate", async function () {
-  const update = this.getUpdate() as any;
-  if (update?.categoryWordId) {
-    const category: any = await CategoryWordModel.findById(update.categoryWordId).select("name");
-    if (!category) throw new CustomError(400, "CategoryWord not found, use valid categoryWordId");
-    if (category) {
-      update.categoryType = category.name
-    }
-  }
-})
+// categoryType middleware removed
 
 //premiddleware for part of speech take partOfSpeech and push to tags if not exist
 wordmanagementSchema.pre("save", function (next) {
