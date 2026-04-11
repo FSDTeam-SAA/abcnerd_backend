@@ -258,8 +258,8 @@ export const wordActionService = async (
       wordType: session.wordType,
       _id: {
         $nin: [
-          ...(userProgress?.memorized || []),
-          ...(userProgress?.reviewLater || []),
+          ...(progress?.memorized || []),
+          ...(progress?.reviewLater || []),
         ].map((id) => id.toString()),
       },
     } as any);
