@@ -292,7 +292,12 @@ if (shouldTriggerVideo && session) {
   video = await getNextVideoService(userId, session.categoryId.toString());
 
   if (video?.cloudinaryUrl && video.cloudinaryUrl.startsWith("http")) {
-    videoUrl = video.cloudinaryUrl;
+    let url = video.cloudinaryUrl;
+    // Optimize for device compatibility if it's a Cloudinary link
+    if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+      url = url.replace("/upload/", "/upload/f_auto,q_auto/");
+    }
+    videoUrl = url;
     videoId = video._id;
   }
 }
