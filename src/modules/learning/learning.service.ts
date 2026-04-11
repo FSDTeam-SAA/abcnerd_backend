@@ -72,6 +72,7 @@ export const createLearningSessionService = async (
   session.totalWordsInCategory = totalWords;
   await session.save();
 
+  console.log(`[Session] Created for ${userId}: Category=${categoryDoc.name}, TotalWords=${totalWords}`);
   return session;
 };
 
@@ -297,6 +298,10 @@ if (shouldTriggerVideo && session) {
 }
 
 const shouldShowVideo = shouldTriggerVideo && !!videoUrl && !!videoId;
+
+if (shouldTriggerVideo) {
+  console.log(`[VideoTrigger] User=${userId}, shouldShow=${shouldShowVideo}, videoId=${videoId}, url=${videoUrl}`);
+}
 
 const lastAction = progress.lastActionDate
   ? new Date(progress.lastActionDate)
