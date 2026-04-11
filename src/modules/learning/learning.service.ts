@@ -82,7 +82,9 @@ export const fetchLearningWordsService = async (
   dailyGoal: number,
   wordType: string,
 ) => {
-  const categoryDoc = await CategoryWordModel.findOne({ name: category });
+  const categoryDoc = await CategoryWordModel.findOne({
+    name: { $regex: `^${category}$`, $options: "i" }
+  });
   if (!categoryDoc) throw new CustomError(404, "Catergory not found");
 
   const progress = await Progress.findOne({ user: userId });
@@ -149,7 +151,7 @@ export const wordActionService = async (
       $addToSet: { [action]: new Types.ObjectId(wordId) },
       $pull: { [oppositeField]: new Types.ObjectId(wordId) },
     },
-    { new: true, upsert: true },
+    { returnDocument: "after", upsert: true },
   );
 
   // ✅ Deduct balance for BOTH actions (if not unlimited)
@@ -330,7 +332,7 @@ progress = await Progress.findOneAndUpdate(
     lastActionDate: new Date(),
     nextVideoAt: shouldShowVideo,
   },
-  { new: true },
+  { returnDocument: "after" },
 );
 
 // ✅ Emit real-time progress update for the UI counters (Moved down to avoid variable usage error)

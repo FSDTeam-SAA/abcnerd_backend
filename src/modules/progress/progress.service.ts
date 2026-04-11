@@ -106,7 +106,9 @@ export const getReviewLaterService = async (req: any) => {
   // category type filter
 
   if (categoryType) {
-    const categoryDoc = await CategoryWordModel.findOne({ name: categoryType });
+    const categoryDoc = await CategoryWordModel.findOne({
+      name: { $regex: `^${categoryType}$`, $options: "i" }
+    });
     if (categoryDoc) {
       if (!filter.$and) filter.$and = [];
       filter.$and.push({

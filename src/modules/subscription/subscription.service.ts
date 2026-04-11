@@ -399,7 +399,7 @@ export const deletePaymentHistory = async (id: string) => {
   const result = await SubscriptionModel.findByIdAndUpdate(
     id,
     { isDeleted: true },
-    { new: true }
+    { returnDocument: 'after' }
   );
 
   if (!result) {

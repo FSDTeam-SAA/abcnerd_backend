@@ -51,7 +51,9 @@ const getAllWordmanagements = async (req: any) => {
   /* ================= CATEGORY TYPE FILTER ================= */
 
   if (categoryType) {
-    const categoryDoc = await CategoryWordModel.findOne({ name: categoryType });
+    const categoryDoc = await CategoryWordModel.findOne({
+      name: { $regex: `^${categoryType}$`, $options: "i" }
+    });
     if (categoryDoc) {
       if (!filter.$and) filter.$and = [];
       filter.$and.push({

@@ -55,7 +55,7 @@ export const updateVideoService = async (
   payload: IVideoUpdate,
 ) => {
   const video = await VideoModel.findByIdAndUpdate(videoId, payload, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true,
   });
 

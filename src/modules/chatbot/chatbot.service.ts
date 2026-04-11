@@ -116,7 +116,7 @@ const getOrCreateDayDoc = async (identity: IChatIdentity) => {
   const dayDoc = await DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $setOnInsert: setOnInsert },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
 
   // Trigger first-chat notification only when document is newly created
@@ -252,7 +252,7 @@ const deleteHistoryByDay = async (identity: IChatIdentity, dayKey: string) => {
   return DailyChatHistoryModel.findOneAndUpdate(
     filter,
     { $set: { isDeleted: true } },
-    { new: true },
+    { returnDocument: 'after' },
   );
 };
 

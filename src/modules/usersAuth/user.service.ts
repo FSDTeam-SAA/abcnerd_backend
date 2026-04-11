@@ -526,7 +526,7 @@ export const userService = {
     const user = await userModel.findByIdAndUpdate(
       userId,
       { fcmToken },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!user) throw new CustomError(404, "User not found");
     return user;
