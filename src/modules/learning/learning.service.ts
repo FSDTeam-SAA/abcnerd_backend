@@ -53,6 +53,25 @@ export const createLearningSessionService = async (
     await progress.save();
   }
 
+  // ✅ Pre-calculate total available words in category to avoid countDocuments later
+  const excludedIds = [
+    ...(progress?.memorized || []),
+    ...(progress?.reviewLater || []),
+  ];
+
+  const totalWords = await WordmanagementModel.countDocuments({
+    $or: [
+      { categoryWordId: categoryDoc._id },
+      { categoryType: { $regex: `^${categoryDoc.name}$`, $options: "i" } }
+    ],
+    status: "active",
+    wordType: wordType,
+    _id: { $nin: excludedIds.map((id: any) => id.toString()) },
+  });
+
+  session.totalWordsInCategory = totalWords;
+  await session.save();
+
   return session;
 };
 
@@ -66,19 +85,27 @@ export const fetchLearningWordsService = async (
   if (!categoryDoc) throw new CustomError(404, "Catergory not found");
 
   const progress = await Progress.findOne({ user: userId });
-  const excludedIds = [
+  let excludedIds = [
     ...(progress?.memorized || []),
     ...(progress?.reviewLater || []),
-  ];
+  ].map((id: any) => id.toString());
 
-  const words = await WordmanagementModel.find({
+  // ✅ Optimization: only exclude IDs that are actually in this category
+  // This prevents $nin from ballooning with thousands of irrelevant IDs
+  const wordsInProgressCategory = await WordmanagementModel.find({
     $or: [
       { categoryWordId: categoryDoc._id },
       { categoryType: { $regex: `^${categoryDoc.name}$`, $options: "i" } }
     ],
     status: "active",
     wordType: wordType,
-    _id: { $nin: excludedIds.map((id: any) => id.toString()) },
+  }).select("_id");
+
+  const categoryWordIds = wordsInProgressCategory.map(w => w._id.toString());
+  excludedIds = excludedIds.filter(id => categoryWordIds.includes(id));
+
+  const words = await WordmanagementModel.find({
+    _id: { $in: categoryWordIds, $nin: excludedIds },
   }).limit(dailyGoal);
 
   return words;
@@ -202,124 +229,120 @@ export const wordActionService = async (
     io.to(userId.toString()).emit("notification:new", notif);
   }
 
-  // ── Review Words Notification (Every 15 words) ──
-  const reviewCount = progress.reviewLater.length;
-  if (reviewCount > 0 && reviewCount % 15 === 0 && action === "reviewLater") {
-    const title = "Review Words Accumulated";
-    const description = `${reviewCount} review words accumulated. Check now.`;
 
-    const notif = await NotificationModel.create({
-      receiverId: userId.toString(),
-      title,
-      description,
-      type: NotificationType.REVIEW,
-      status: NotificationStatus.UNREAD,
-    });
 
-    io.to(userId.toString()).emit("review:accumulated", {
-      message: title,
-      description,
-      count: reviewCount,
-    });
-    io.to(userId.toString()).emit("newNotification", notif);
+// ── Review Words Notification (Every 15 words) ──
+const reviewCount = progress.reviewLater.length;
+if (reviewCount > 0 && reviewCount % 15 === 0 && action === "reviewLater") {
+  const title = "Review Words Accumulated";
+  const description = `${reviewCount} review words accumulated. Check now.`;
+
+  const notif = await NotificationModel.create({
+    receiverId: userId.toString(),
+    title,
+    description,
+    type: NotificationType.REVIEW,
+    status: NotificationStatus.UNREAD,
+  });
+
+  io.to(userId.toString()).emit("review:accumulated", {
+    message: title,
+    description,
+    count: reviewCount,
+  });
+  io.to(userId.toString()).emit("newNotification", notif);
+}
+
+// ── Video Trigger Logic ──
+// Rule: Show video when session swipeCount reaches 10 OR if it's the last word of the session/category.
+const newSessionMemorizedWords =
+  action === "memorized"
+    ? (session?.memorizedWords || 0) + 1
+    : session?.memorizedWords || 0;
+
+// Track swipe count in session
+const newSessionSwipeCount = (session?.swipeCount || 0) + 1;
+
+if (session) {
+  await Learning.findByIdAndUpdate(session._id, {
+    memorizedWords: newSessionMemorizedWords,
+    swipeCount: newSessionSwipeCount,
+  });
+}
+
+// Check if any words remain in this category for this user (using cached count)
+let isCategoryExhausted = false;
+if (session) {
+  // totalWordsInCategory is words that weren't memorized AT START of session
+  // newSessionSwipeCount is words swiped THIS session
+  const wordsRemaining = Math.max(0, session.totalWordsInCategory - newSessionSwipeCount);
+  isCategoryExhausted = wordsRemaining === 0;
+}
+
+const isLastWordOfSession = newSessionSwipeCount >= dailyGoal;
+const shouldTriggerVideo =
+  newSessionSwipeCount % 10 === 0 || isLastWordOfSession || isCategoryExhausted;
+
+let videoUrl = null;
+let videoId = null;
+let video: any = null;
+if (shouldTriggerVideo && session) {
+  // Fetch video category-wise using the ID from the session
+  video = await getNextVideoService(userId, session.categoryId.toString());
+
+  if (video?.cloudinaryUrl && video.cloudinaryUrl.startsWith("http")) {
+    videoUrl = video.cloudinaryUrl;
+    videoId = video._id;
   }
+}
 
-  // ── Video Trigger Logic ──
-  // Rule: Show video when session swipeCount reaches 10 OR if it's the last word of the session/category.
-  const newSessionMemorizedWords =
-    action === "memorized"
-      ? (session?.memorizedWords || 0) + 1
-      : session?.memorizedWords || 0;
+const shouldShowVideo = shouldTriggerVideo && !!videoUrl && !!videoId;
 
-  // Track swipe count in session
-  const newSessionSwipeCount = (session?.swipeCount || 0) + 1;
+const lastAction = progress.lastActionDate
+  ? new Date(progress.lastActionDate)
+  : null;
+if (lastAction) lastAction.setHours(0, 0, 0, 0);
 
-  if (session) {
-    await Learning.findByIdAndUpdate(session._id, {
-      memorizedWords: newSessionMemorizedWords,
-      swipeCount: newSessionSwipeCount,
-    });
-  }
+const isConsecutiveDay =
+  lastAction &&
+  today.getTime() - lastAction.getTime() === 24 * 60 * 60 * 1000;
 
-  // Check if any words remain in this category for this user
-  let isCategoryExhausted = false;
-  if (session) {
-    const wordsRemaining = await WordmanagementModel.countDocuments({
-      $or: [
-        { categoryWordId: session.categoryId },
-        { 
-          categoryType: { 
-            $regex: `^${session.learningCategory}$`, 
-            $options: "i" 
-          } 
-        }
-      ],
-      status: "active",
-      wordType: session.wordType,
-      _id: {
-        $nin: [
-          ...(progress?.memorized || []),
-          ...(progress?.reviewLater || []),
-        ].map((id) => id.toString()),
-      },
-    } as any);
-    isCategoryExhausted = wordsRemaining === 0;
-  }
+const newScore = action === "memorized" ? (progress.score || 0) + 1 : progress.score || 0;
+const newStreak = action === "memorized"
+  ? (isConsecutiveDay ? (progress.streak || 0) + 1 : 1)
+  : (progress.streak || 0);
 
-  const isLastWordOfSession = newSessionSwipeCount >= dailyGoal;
-  const shouldTriggerVideo =
-    newSessionSwipeCount % 10 === 0 || isLastWordOfSession || isCategoryExhausted;
+progress = await Progress.findOneAndUpdate(
+  { user: userId },
+  {
+    score: newScore,
+    streak: newStreak,
+    lastActionDate: new Date(),
+    nextVideoAt: shouldShowVideo,
+  },
+  { new: true },
+);
 
-  let videoUrl = null;
-  let videoId = null;
-  let video: any = null;
-  if (shouldTriggerVideo && session) {
-    // Fetch video category-wise using the ID from the session
-    video = await getNextVideoService(userId, session.categoryId.toString());
-    
-    if (video?.cloudinaryUrl && video.cloudinaryUrl.startsWith("http")) {
-      videoUrl = video.cloudinaryUrl;
-      videoId = video._id;
-    }
-  }
+// ✅ Emit real-time progress update for the UI counters (Moved down to avoid variable usage error)
+io.to(userId.toString()).emit("progress:update", {
+  dailyStat: {
+    ...progress.dailyStat,
+    remainingGoal: Math.max(0, dailyGoal - newSessionSwipeCount),
+  },
+  score: newScore,
+  streak: newStreak,
+});
 
-  const shouldShowVideo = shouldTriggerVideo && !!videoUrl && !!videoId;
-
-  const lastAction = progress.lastActionDate
-    ? new Date(progress.lastActionDate)
-    : null;
-  if (lastAction) lastAction.setHours(0, 0, 0, 0);
-
-  const isConsecutiveDay =
-    lastAction &&
-    today.getTime() - lastAction.getTime() === 24 * 60 * 60 * 1000;
-
-  const newScore = action === "memorized" ? (progress.score || 0) + 1 : progress.score || 0;
-  const newStreak = action === "memorized" 
-    ? (isConsecutiveDay ? (progress.streak || 0) + 1 : 1)
-    : (progress.streak || 0);
-
-  progress = await Progress.findOneAndUpdate(
-    { user: userId },
-    {
-      score: newScore,
-      streak: newStreak,
-      lastActionDate: new Date(),
-      nextVideoAt: shouldShowVideo,
-    },
-    { new: true },
-  );
-
-  return {
-    progress,
-    shouldShowVideo,
-    videoUrl,
-    videoId,
-    title: video?.title,
-    description: video?.description,
-    learningCategory: session?.learningCategory?.toString() ?? null,
-    categoryId: session?.categoryId?.toString() ?? null,
-  };
+return {
+  progress,
+  shouldShowVideo,
+  videoUrl,
+  videoId,
+  title: video?.title,
+  description: video?.description,
+  learningCategory: session?.learningCategory?.toString() ?? null,
+  categoryId: session?.categoryId?.toString() ?? null,
+};
 };
 
 export const getActiveSessionService = async (userId: Types.ObjectId) => {

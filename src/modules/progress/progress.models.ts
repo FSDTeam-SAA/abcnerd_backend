@@ -35,4 +35,7 @@ const progressSchema = new Schema<IProgress>(
   { timestamps: true },
 );
 
+progressSchema.index({ user: 1, lastActionDate: -1 });
+progressSchema.index({ user: 1, "dailyStat.date": 1 });
+
 export const Progress = model<IProgress>("Progress", progressSchema);

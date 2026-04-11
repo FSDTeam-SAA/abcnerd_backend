@@ -13,4 +13,5 @@ export interface ILearning {
   swipeCount: number;
   completionPercentage: number;
   memorizedWords: number;
+  totalWordsInCategory: number;
 }

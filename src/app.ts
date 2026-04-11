@@ -12,6 +12,8 @@ import cors from "cors";
 import CustomError from "./helpers/CustomError";
 import { notFound } from "./middleware/notFound";
 import { googleLogin, kakaoLoginPage } from "./Oauth/google";
+import rateLimit from "express-rate-limit";
+import mongoose from "mongoose";
 
 // import passport from "./Oauth/passport/kakao"; // not use a midlleware
 
@@ -38,11 +40,26 @@ app.use(
 );
 app.use(express.json());
 
-app.get("/api/v1/ping", (req, res) => {
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Limit each IP to 200 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiter specifically to auth and learning critical paths
+app.use("/api/v1/auth", limiter);
+app.use("/api/v1/learning", limiter);
+
+app.get("/health", async (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
   res.json({
-    success: true,
-    message: "Server is alive",
-    time: new Date(),
+    status: "ok",
+    environment: config.env,
+    database: dbStatus,
+    uptime: process.uptime(),
+    timestamp: new Date(),
   });
 });
 app.use(cookieParser());

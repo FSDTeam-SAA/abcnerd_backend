@@ -48,6 +48,10 @@ const learningSchema = new Schema<ILearning>(
       type: Number,
       default: 0,
     },
+    totalWordsInCategory: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );

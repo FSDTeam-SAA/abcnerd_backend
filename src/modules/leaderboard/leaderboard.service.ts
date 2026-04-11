@@ -1,13 +1,17 @@
 import { QuizAttemptModel } from "../quizattempt/quizattempt.models";
 import { userModel } from "../usersAuth/user.models";
 import { QuestionModel } from "../question/question.models";
-import { ILeaderboardResponse } from "./leaderboard.interface";
+import { getCache, setCache } from "../../utils/redis";
 
 const getAllLeaderboardData = async (
   page: number = 1,
   limit: number = 10,
-  filter?: string
+  filter: string = "Year"
 ) => {
+  const cacheKey = `leaderboard:${filter}:${page}:${limit}`;
+  const cachedData = await getCache(cacheKey);
+  if (cachedData) return cachedData;
+
   const skip = (page - 1) * limit;
 
   // Calculate start date based on filter
@@ -200,7 +204,7 @@ const getAllLeaderboardData = async (
     ...entry,
   }));
 
-  return {
+  const response = {
     leaderboard,
     stats: {
       totalUsers,
@@ -213,6 +217,10 @@ const getAllLeaderboardData = async (
     limit,
     totalPages,
   };
+
+  await setCache(cacheKey, response, 300); // 5 min cache
+
+  return response;
 };
 
 export const leaderboardService = { getAllLeaderboardData };

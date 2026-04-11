@@ -101,7 +101,7 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
 );
 
 // Pre-save to sync categoryType from categoryWordId if missing
-wordmanagementSchema.pre("save", async function (next) {
+wordmanagementSchema.pre("save", async function () {
   if (this.categoryWordId && !this.categoryType) {
     try {
       const cat = await CategoryWordModel.findById(this.categoryWordId);
@@ -112,7 +112,6 @@ wordmanagementSchema.pre("save", async function (next) {
       console.error("Error syncing categoryType:", e);
     }
   }
-  next();
 });
 
 // categoryType middleware restored
@@ -164,5 +163,8 @@ wordmanagementSchema.pre("findOneAndUpdate", async function () {
   }
 
 });
+
+wordmanagementSchema.index({ status: 1, wordType: 1, categoryWordId: 1 });
+wordmanagementSchema.index({ status: 1, wordType: 1, categoryType: 1 });
 
 export const WordmanagementModel = mongoose.model<IWordmanagement>("Wordmanagement", wordmanagementSchema);

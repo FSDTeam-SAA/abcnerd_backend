@@ -28,6 +28,9 @@ const quizAttemptSchema = new Schema<IQuizAttempt>(
   { timestamps: true },
 );
 
+quizAttemptSchema.index({ user: 1, completedAt: -1 });
+quizAttemptSchema.index({ completedAt: -1, percentage: -1 });
+
 export const QuizAttemptModel = model<IQuizAttempt>(
   "QuizAttempt",
   quizAttemptSchema,
