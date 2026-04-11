@@ -21,6 +21,11 @@ const learningSchema = new Schema<ILearning>(
       type: String,
       required: true,
     },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "CategoryWord",
+      required: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

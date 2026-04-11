@@ -49,14 +49,17 @@ export const markVideoCompleteService = async (
   userId: Types.ObjectId,
   videoId: string,
 ) => {
+  console.log(`[VideoProgress] Marking video ${videoId} as complete for user ${userId}`);
+  
   const video = await VideoModel.findById(videoId);
   if (!video) throw new CustomError(404, "Video not found");
 
   const progress = await UserVideoProgressModel.findOneAndUpdate(
-    { user: userId, video: videoId },
+    { user: userId, video: new Types.ObjectId(videoId) },
     {
       status: "completed",
       watchedAt: new Date(),
+      availableAt: new Date(), // Required field in schema
     },
     { upsert: true, new: true },
   );

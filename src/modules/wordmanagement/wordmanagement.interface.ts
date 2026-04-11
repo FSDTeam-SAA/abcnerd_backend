@@ -29,14 +29,13 @@ export interface IWordmanagement {
   examples?: string[];
 
   categoryWordId: Types.ObjectId;
-  categoryType?: string; // categoryWord name
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;
 
   tags?: string[];
 
-  frequency?: number;   
+  frequency?: number;
 
   status?: string;
   slug?: string;

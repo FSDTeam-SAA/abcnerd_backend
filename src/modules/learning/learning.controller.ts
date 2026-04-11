@@ -71,6 +71,9 @@ export const wordAction = asyncHandler(async (req: Request, res: Response) => {
   ApiResponse.sendSuccess(res, 200, `Word marked as "${action}" successfully`, {
     progress: result.progress,
     shouldShowVideo: result.shouldShowVideo,
+    videoUrl: result.videoUrl,
+    videoId: result.videoId,
+    learningCategory: result.learningCategory,
   });
 });
 

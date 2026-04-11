@@ -8,6 +8,7 @@ export interface IVideo {
   cloudinaryUrl: string;
   order: number;
   isActive: boolean;
+  description?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -9,8 +9,10 @@ import { paginationHelper } from "../../utils/pagination";
 import { userModel } from "../usersAuth/user.models";
 
 export const getProgressService = async (userId: Types.ObjectId) => {
-  const progress = await Progress.findOne({ user: userId });
-  if (!progress) throw new CustomError(404, "Progress not found");
+  let progress = await Progress.findOne({ user: userId });
+  if (!progress) {
+    progress = await Progress.create({ user: userId });
+  }
 
   const user = await userModel.findById(userId).select("dailyGoal");
   if (!user) throw new CustomError(404, "User not found");
@@ -40,12 +42,14 @@ export const getProgressWordsService = async (
   userId: Types.ObjectId,
   type: "memorized" | "reviewLater",
 ) => {
-  const progress = await Progress.findOne({ user: userId }).populate({
+  let progress = await Progress.findOne({ user: userId }).populate({
     path: type,
     select: "word synonyms examples pronunciation description slug",
   });
-
-  if (!progress) throw new CustomError(404, "Progress not found");
+  
+  if (!progress) {
+    progress = await Progress.create({ user: userId });
+  }
 
   return progress[type];
 };
@@ -179,8 +183,10 @@ export const toggleFavoriteService = async (
   userId: Types.ObjectId,
   wordId: string,
 ) => {
-  const progress = await Progress.findOne({ user: userId });
-  if (!progress) throw new CustomError(404, "Progress not found");
+  let progress = await Progress.findOne({ user: userId });
+  if (!progress) {
+    progress = await Progress.create({ user: userId });
+  }
 
   const wordObjectId = new Types.ObjectId(wordId);
 

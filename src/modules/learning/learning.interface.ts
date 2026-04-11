@@ -7,6 +7,7 @@ export interface ILearning {
   dailyGoal: number;
   estimatedTime: number; // auto = dailyGoal / 2
   learningCategory: string; // enum string
+  categoryId: Types.ObjectId;
   isActive: boolean; // only one active session allowed
   wordType: WordType;
   swipeCount: number;

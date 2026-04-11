@@ -21,6 +21,10 @@ const videoSchema = new Schema<IVideo>(
       type: String,
       default: "",
     },
+    description: {
+      type: String,
+      default: "",
+    },
     order: {
       type: Number,
       required: true,
