@@ -50,7 +50,7 @@ const getAllCategoryWords = async (req: any) => {
   }
 
   // Map sortBy to actual sorting
-  const sort: any = sortBy === "acc" ? { createdAt: 1 } : { createdAt: -1 };
+  const sort: any = sortBy === "asc" ? { createdAt: 1 } : { createdAt: -1 };
 
   // Fetch data
   let categoryWords = await CategoryWordModel.find(filter)
@@ -79,7 +79,7 @@ const getAllCategoryWords = async (req: any) => {
       const totalWord = await WordmanagementModel.countDocuments({
         $or: [
           { categoryWordId: catId },
-          { categoryType: cat.name }
+          { categoryType: { $regex: `^${cat.name}$`, $options: "i" } }
         ]
       });
 
@@ -88,7 +88,7 @@ const getAllCategoryWords = async (req: any) => {
         learnedWord = await WordmanagementModel.countDocuments({
           $or: [
             { categoryWordId: catId },
-            { categoryType: cat.name }
+            { categoryType: { $regex: `^${cat.name}$`, $options: "i" } }
           ],
           _id: { $in: memorizedStrs }
         });

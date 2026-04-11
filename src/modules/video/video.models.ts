@@ -10,7 +10,7 @@ const videoSchema = new Schema<IVideo>(
     },
     category: {
       type: Schema.Types.ObjectId,
-      ref: "WordCategory",
+      ref: "CategoryWord",
       required: true,
     },
     cloudinaryPublicId: {

@@ -74,7 +74,7 @@ export const fetchLearningWordsService = async (
   const words = await WordmanagementModel.find({
     $or: [
       { categoryWordId: categoryDoc._id },
-      { categoryType: categoryDoc.name }
+      { categoryType: { $regex: `^${categoryDoc.name}$`, $options: "i" } }
     ],
     status: "active",
     wordType: wordType,
@@ -245,13 +245,24 @@ export const wordActionService = async (
   let isCategoryExhausted = false;
   if (session) {
     const wordsRemaining = await WordmanagementModel.countDocuments({
-      categoryWordId: session.categoryId,
+      $or: [
+        { categoryWordId: session.categoryId },
+        { 
+          categoryType: { 
+            $regex: `^${session.learningCategory}$`, 
+            $options: "i" 
+          } 
+        }
+      ],
       status: "active",
       wordType: session.wordType,
       _id: {
-        $nin: (progress.memorized || []).concat(progress.reviewLater || []),
+        $nin: [
+          ...(userProgress?.memorized || []),
+          ...(userProgress?.reviewLater || []),
+        ].map((id) => id.toString()),
       },
-    });
+    } as any);
     isCategoryExhausted = wordsRemaining === 0;
   }
 
@@ -272,7 +283,7 @@ export const wordActionService = async (
     }
   }
 
-  const shouldShowVideo = shouldTriggerVideo && !!videoUrl;
+  const shouldShowVideo = shouldTriggerVideo && !!videoUrl && !!videoId;
 
   const lastAction = progress.lastActionDate
     ? new Date(progress.lastActionDate)

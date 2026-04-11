@@ -46,11 +46,12 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
       index: true,
     },
 
-    // categoryType: {
-    //   type: String,
-    //   trim: true,
-    //   default: null,
-    // },
+    categoryType: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
+    },
 
     /* Classification */
     wordType: {
@@ -99,7 +100,22 @@ const wordmanagementSchema = new Schema<IWordmanagement>(
   }
 );
 
-// categoryType middleware removed
+// Pre-save to sync categoryType from categoryWordId if missing
+wordmanagementSchema.pre("save", async function (next) {
+  if (this.categoryWordId && !this.categoryType) {
+    try {
+      const cat = await CategoryWordModel.findById(this.categoryWordId);
+      if (cat) {
+        this.categoryType = cat.name;
+      }
+    } catch (e) {
+      console.error("Error syncing categoryType:", e);
+    }
+  }
+  next();
+});
+
+// categoryType middleware restored
 
 //premiddleware for part of speech take partOfSpeech and push to tags if not exist
 wordmanagementSchema.pre("save", function (next) {

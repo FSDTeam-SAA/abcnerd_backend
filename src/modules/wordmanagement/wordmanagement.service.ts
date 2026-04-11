@@ -57,7 +57,7 @@ const getAllWordmanagements = async (req: any) => {
       filter.$and.push({
         $or: [
           { categoryWordId: categoryDoc._id },
-          { categoryType: categoryType }
+          { categoryType: { $regex: `^${categoryType}$`, $options: "i" } }
         ]
       });
     } else {

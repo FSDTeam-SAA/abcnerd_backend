@@ -29,6 +29,7 @@ export interface IWordmanagement {
   examples?: string[];
 
   categoryWordId: Types.ObjectId;
+  categoryType?: string;
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;
@@ -52,6 +53,7 @@ export interface ICreateWordmanagement {
   synonyms?: string[];
 
   categoryWordId: Types.ObjectId | string;
+  categoryType?: string;
 
   wordType: WordType;
   partOfSpeech?: PartOfSpeech;
@@ -67,6 +69,7 @@ export interface IUpdateWordmanagement {
   synonyms?: string[];
 
   categoryWordId?: Types.ObjectId | string;
+  categoryType?: string;
 
   wordType?: WordType;
   partOfSpeech?: PartOfSpeech;
