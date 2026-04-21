@@ -43,7 +43,7 @@ router.post(
   registration,
 );
 
-router.post("/login", rateLimiter(1, 5), validateRequest(loginSchema), login);
+router.post("/sign-in", validateRequest(loginSchema), login);
 
 router.get("/get-all-user", authGuard as any, allowRole("admin") as any, getalluser);
 
