@@ -18,11 +18,14 @@ export const createLearningSessionService = async (
   userId: Types.ObjectId,
   category: Types.ObjectId,
   wordType: string,
+  sessionWordLimit?: number,
 ) => {
   const user = await userModel.findById(userId).select("dailyGoal");
   if (!user) throw new CustomError(404, "User not found");
 
   const dailyGoal = user.dailyGoal;
+  const resolvedSessionWordLimit =
+    sessionWordLimit && sessionWordLimit > 0 ? sessionWordLimit : 10;
 
   await Learning.findOneAndUpdate(
     { user: userId, isActive: true },
@@ -35,6 +38,7 @@ export const createLearningSessionService = async (
   const session = await Learning.create({
     user: userId,
     dailyGoal,
+    sessionWordLimit: resolvedSessionWordLimit,
     learningCategory: categoryDoc.name,
     categoryId: category,
     isActive: true,
@@ -79,7 +83,7 @@ export const createLearningSessionService = async (
 export const fetchLearningWordsService = async (
   userId: Types.ObjectId,
   category: string,
-  dailyGoal: number,
+  sessionWordLimit: number,
   wordType: string,
 ) => {
   const categoryDoc = await CategoryWordModel.findOne({
@@ -109,7 +113,7 @@ export const fetchLearningWordsService = async (
 
   const words = await WordmanagementModel.find({
     _id: { $in: categoryWordIds, $nin: excludedIds },
-  }).limit(dailyGoal);
+  }).limit(sessionWordLimit);
 
   return words;
 };
@@ -122,7 +126,7 @@ export const wordActionService = async (
   const oppositeField = action === "memorized" ? "reviewLater" : "memorized";
   const userProgress = await Progress.findOne({ user: userId });
 
-  const user = await userModel.findById(userId).select("email balance");
+  const user = await userModel.findById(userId).select("email balance dailyGoal");
 
   if (!user) throw new CustomError(404, "User not found");
 
@@ -165,7 +169,7 @@ export const wordActionService = async (
   today.setHours(0, 0, 0, 0);
 
   const session = await Learning.findOne({ user: userId, isActive: true });
-  const dailyGoal = session?.dailyGoal || 0;
+  const dailyGoal = user.dailyGoal || 0;
 
   const existingStat = userProgress?.dailyStat;
   const isSameDay =
@@ -282,9 +286,9 @@ if (session) {
   isCategoryExhausted = wordsRemaining === 0;
 }
 
-const isLastWordOfSession = newSessionSwipeCount >= dailyGoal;
+const sessionWordLimit = session?.sessionWordLimit || 10;
 const shouldTriggerVideo =
-  newSessionSwipeCount % 10 === 0 || isLastWordOfSession || isCategoryExhausted;
+  newSessionSwipeCount % sessionWordLimit === 0 || isCategoryExhausted;
 
 let videoUrl = null;
 let videoId = null;

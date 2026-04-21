@@ -15,23 +15,39 @@ import {
   NotificationStatus,
   NotificationType,
 } from "../notification/notification.interface";
+import { userModel } from "../usersAuth/user.models";
+import { Learning } from "../learning/learning.models";
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey as string });
 
 // System instruction to prime the AI's behavior. Can be adjusted for different personalities or use cases.
 
 const SYSTEM_INSTRUCTION = `
-You are SwipeLang AI — a modern slang-focused translator and vocabulary assistant.
+You are Swap Lang AI — the in-app English learning companion for the Swap Lang app.
 Rules:
 - Reply ONLY in English.
-- Be concise, friendly, and accurate.
-- If user asks meaning + examples, respond with short meaning + real-life usage examples.
+- Be concise, friendly, encouraging, accurate, and personalized to the learner.
+- Help with vocabulary, slang, translation, pronunciation, grammar, usage, and natural conversation practice.
+- Act like a supportive AI language partner, not a generic assistant.
+- Use the user's saved profile, learning progress, current study context, and recent chat history when it improves the answer.
+- If the user recently learned words, naturally guide the conversation toward practicing them when appropriate.
+- Prefer short interactive practice over long lectures. Use 1 to 3 relevant recent words at a time, not too many at once.
+- When the user seems open to practice, continue the conversation with a short follow-up question, mini roleplay, or sentence challenge.
+- If the user makes a language mistake, gently correct it, explain briefly, and keep the conversation going naturally.
+- If the user asks meaning + examples, respond with a short meaning, one clear explanation, and natural real-life examples.
+- If the user asks for translation, also help them say it more naturally if useful.
+- Keep most answers compact unless the user asks for more detail.
+- Do not call the app SwipeLang or describe it as a slang-only app unless the user explicitly says that.
 `;
 
 const MODEL = "gemini-2.5-flash";
 const MAX_OUTPUT_TOKENS = 2048;
 const TEMPERATURE = 0.9;
-const MAX_HISTORY_CHARS = 12000;
+const MAX_HISTORY_CHARS = 28000;
+const RECENT_HISTORY_DAYS = 7;
+const MAX_RECENT_VOCAB_WORDS = 12;
+const MAX_REVIEW_WORDS = 8;
+const MAX_LATEST_CATEGORIES = 3;
 
 // helper function to handle Gemini API errors and throw user-friendly messages
 
@@ -95,13 +111,156 @@ const getUserVocabularyContext = async (userId?: Types.ObjectId | string): Promi
   if (!userId) return "";
   try {
     const Progress = (await import("../progress/progress.models")).Progress;
-    const p = await Progress.findOne({ user: userId }).populate("memorized", "word").lean();
-    if (!p || !p.memorized?.length) return "";
-    const words = (p.memorized as any[]).map(w => w.word).slice(-10).join(", ");
-    return `\n\nUser's recently learned vocabulary: ${words}. Try to use these if relevant.`;
+    const p = await Progress.findOne({ user: userId })
+      .populate("memorized", "word")
+      .populate("reviewLater", "word")
+      .lean();
+
+    if (!p) return "";
+
+    const recentMemorizedWords = (p.memorized as any[] | undefined)
+      ?.map((w) => w?.word)
+      .filter(Boolean)
+      .slice(-MAX_RECENT_VOCAB_WORDS) ?? [];
+
+    const reviewWords = (p.reviewLater as any[] | undefined)
+      ?.map((w) => w?.word)
+      .filter(Boolean)
+      .slice(-MAX_REVIEW_WORDS) ?? [];
+
+    const contextParts = [
+      recentMemorizedWords.length
+        ? `Recently learned vocabulary: ${recentMemorizedWords.join(", ")}.`
+        : null,
+      reviewWords.length
+        ? `Words marked for review: ${reviewWords.join(", ")}.`
+        : null,
+    ].filter(Boolean);
+
+    if (!contextParts.length) return "";
+
+    return `\n\nVocabulary context:\n- ${contextParts.join("\n- ")}`;
   } catch (e) {
     return "";
   }
+};
+
+const getUserProfileContext = async (
+  userId?: Types.ObjectId | string,
+): Promise<string> => {
+  if (!userId) return "";
+
+  try {
+    const user = await userModel
+      .findById(userId)
+      .select(
+        "name selfIntroduction dailyGoal city country provider subscription.plan subscription.status",
+      )
+      .lean();
+
+    if (!user) return "";
+
+    const contextParts = [
+      user.name ? `Learner name: ${user.name}.` : null,
+      user.selfIntroduction
+        ? `Self introduction: ${user.selfIntroduction}.`
+        : null,
+      user.dailyGoal ? `Daily learning goal: ${user.dailyGoal} words.` : null,
+      user.city || user.country
+        ? `Location: ${[user.city, user.country].filter(Boolean).join(", ")}.`
+        : null,
+      user.provider ? `Sign-in provider: ${user.provider}.` : null,
+      user.subscription?.plan
+        ? `Plan: ${user.subscription.plan} (${user.subscription.status ?? "unknown"}).`
+        : null,
+    ].filter(Boolean);
+
+    if (!contextParts.length) return "";
+
+    return `\n\nUser profile context:\n- ${contextParts.join("\n- ")}`;
+  } catch (e) {
+    return "";
+  }
+};
+
+const getUserLearningCompanionContext = async (
+  userId?: Types.ObjectId | string,
+): Promise<string> => {
+  if (!userId) return "";
+
+  try {
+    const Progress = (await import("../progress/progress.models")).Progress;
+    const [progress, activeSession] = await Promise.all([
+      Progress.findOne({ user: userId }).lean(),
+      Learning.findOne({ user: userId, isActive: true })
+        .select("learningCategory swipeCount sessionWordLimit")
+        .lean(),
+    ]);
+
+    const latestCategories =
+      progress?.latestLearningCategory?.slice(0, MAX_LATEST_CATEGORIES) ?? [];
+
+    const todayStats = progress?.dailyStat;
+    const contextParts = [
+      activeSession?.learningCategory
+        ? `Current active study category: ${activeSession.learningCategory}.`
+        : null,
+      activeSession?.sessionWordLimit
+        ? `Current practice chunk: ${activeSession.swipeCount ?? 0}/${activeSession.sessionWordLimit} words completed.`
+        : null,
+      latestCategories.length
+        ? `Recently studied categories: ${latestCategories.join(", ")}.`
+        : null,
+      todayStats
+        ? `Today's learning stats: memorized ${todayStats.memorizedCount}, review later ${todayStats.reviewLaterCount}, remaining goal ${todayStats.remainingGoal}.`
+        : null,
+      progress?.nextVideoAt
+        ? `The user may be at a practice checkpoint after the latest study flow.`
+        : null,
+    ].filter(Boolean);
+
+    if (!contextParts.length) return "";
+
+    return `\n\nLearning companion context:\n- ${contextParts.join("\n- ")}`;
+  } catch (e) {
+    return "";
+  }
+};
+
+const getRecentChatHistory = async (
+  identity: IChatIdentity,
+): Promise<ChatHistory> => {
+  const query = identity.userId
+    ? { userId: new Types.ObjectId(identity.userId), isDeleted: false }
+    : { sessionId: identity.sessionId ?? "anonymous", isDeleted: false };
+
+  const docs = await DailyChatHistoryModel.find(query)
+    .sort({ dayKey: -1 })
+    .limit(RECENT_HISTORY_DAYS)
+    .select("dayKey messages")
+    .lean();
+
+  const sortedDocs = docs.sort((a, b) => a.dayKey.localeCompare(b.dayKey));
+  const combinedHistory: ChatHistory = [];
+
+  for (const doc of sortedDocs) {
+    const messages = (doc.messages ?? []) as ChatHistory;
+    combinedHistory.push(...messages);
+  }
+
+  return trimHistoryByChars(combinedHistory);
+};
+
+const buildSystemInstruction = async (
+  identity: IChatIdentity,
+): Promise<string> => {
+  const [profileContext, vocabContext, companionContext] = await Promise.all([
+    getUserProfileContext(identity.userId),
+    getUserVocabularyContext(identity.userId),
+    getUserLearningCompanionContext(identity.userId),
+  ]);
+
+  return `${SYSTEM_INSTRUCTION}${profileContext}${vocabContext}${companionContext}`;
 };
 
 // Retrieves today's chat doc for the user, or creates it if it doesn't exist.
@@ -155,14 +314,14 @@ const chat = async (
   const dayDoc = await getOrCreateDayDoc(identity);
   if (!dayDoc) throw new CustomError(500, "Failed to initialize chat session");
 
-  const vocabContext = await getUserVocabularyContext(identity.userId);
+  const systemInstruction = await buildSystemInstruction(identity);
 
   const aiResponse = await handleGeminiError(async () => {
     const result = await ai.models.generateContent({
       model: MODEL,
       contents: message,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
+        systemInstruction,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       },
@@ -198,17 +357,16 @@ const chatWithHistory = async (
   if (!(dayDoc as any).messages) {
     (dayDoc as any).messages = [];
   }
-  const trimmedHistory = trimHistoryByChars(
-    (dayDoc as any).messages as ChatHistory,
-  );
-
-  const vocabContext = await getUserVocabularyContext(identity.userId);
+  const [trimmedHistory, systemInstruction] = await Promise.all([
+    getRecentChatHistory(identity),
+    buildSystemInstruction(identity),
+  ]);
 
   const aiResponse = await handleGeminiError(async () => {
     const chat = ai.chats.create({
       model: MODEL,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION + vocabContext,
+        systemInstruction,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       },

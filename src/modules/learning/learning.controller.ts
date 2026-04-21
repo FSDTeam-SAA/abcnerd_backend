@@ -14,13 +14,14 @@ import ApiResponse from "../../utils/apiResponse";
 export const createLearningSession = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user!._id as Types.ObjectId;
-    const { dailyGoal, learningCategory } = req.body;
+    const { sessionWordLimit, learningCategory } = req.body;
     const { wordType } = req.query;
 
     const session = await createLearningSessionService(
       userId as Types.ObjectId,
       learningCategory as Types.ObjectId,
       wordType as string,
+      sessionWordLimit as number | undefined,
     );
 
     ApiResponse.sendSuccess(
@@ -50,7 +51,7 @@ export const fetchLearningWords = asyncHandler(
     const words = await fetchLearningWordsService(
       userId,
       session.learningCategory,
-      session.dailyGoal,
+      session.sessionWordLimit,
       session.wordType,
     );
 

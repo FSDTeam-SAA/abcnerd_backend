@@ -14,6 +14,11 @@ const learningSchema = new Schema<ILearning>(
       type: Number,
       // required: true,
     },
+    sessionWordLimit: {
+      type: Number,
+      default: 10,
+      min: 1,
+    },
     estimatedTime: {
       type: Number,
     },
